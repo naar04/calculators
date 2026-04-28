@@ -6,28 +6,35 @@
 </head>
 <body>
 
-  <div class="container">
+  <!-- TOP NAV -->
+  <div class="nav">
+    <div class="logo">TaxEase</div>
+    <div class="tag">Pakistan • 2025–26</div>
+  </div>
 
-    <div class="card">
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Instant Income Tax Calculator</h1>
+    <p>Fast, simple & accurate tax estimation for salaried individuals in Pakistan</p>
+  </div>
 
-      <h1>Income Tax Calculator</h1>
-      <p class="sub">Pakistan • Tax Year 2025–26</p>
+  <!-- MAIN CARD -->
+  <div class="card">
 
-      <label>Monthly Income</label>
-      <input id="income" placeholder="e.g. 100000" />
+    <label>Enter Monthly Income</label>
+    <input id="income" placeholder="e.g. 100000" />
 
-      <button onclick="calculateTax()">Calculate Tax</button>
+    <button onclick="calculateTax()">Calculate Tax</button>
 
-      <div id="result" class="result"></div>
+    <div id="result"></div>
 
-      <p class="note">
-        ⚠ This is an estimated calculation based on current tax slabs.
-      </p>
-
+    <div class="note">
+      Estimated calculation based on FBR tax slabs (2025–26)
     </div>
 
   </div>
 
-  <script src="script.js"></script>
 </body>
+
+<script src="script.js"></script>
 </html>
