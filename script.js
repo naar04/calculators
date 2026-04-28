@@ -68,7 +68,7 @@ function shareWhatsApp() {
 💸 Estimated Tax: Rs ${tax.toFixed(0)}
 🏦 Net Income: Rs ${netIncome.toFixed(0)}
 
-Try it here:
+Try it here:-
 👉 https://naar04.github.io/Pakistan-Tax-Calculator/`;
 
   let url = "https://wa.me/?text=" + encodeURIComponent(message);
