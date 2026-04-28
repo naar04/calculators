@@ -4,9 +4,10 @@
   <title>Pakistan Tax Calculator 2025-26</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-  <!-- TOP NAV -->
+  <!-- NAV -->
   <div class="nav">
     <div class="logo">TaxEase</div>
     <div class="tag">Pakistan • 2025–26</div>
@@ -14,8 +15,8 @@
 
   <!-- HERO -->
   <div class="hero">
-    <h1>Instant Income Tax Calculator</h1>
-    <p>Fast, simple & accurate tax estimation for salaried individuals in Pakistan</p>
+    <h1>Income Tax Calculator</h1>
+    <p>Fast & simple tax estimation for Pakistan</p>
   </div>
 
   <!-- MAIN CARD -->
@@ -26,17 +27,19 @@
 
     <button onclick="calculateTax()">Calculate Tax</button>
 
-    <div id="result"></div>
+    <div id="result" class="result"></div>
+
+    <!-- WHATSAPP BUTTON (IMPORTANT) -->
+    <button class="share-btn" onclick="shareWhatsApp()">
+      Share on WhatsApp
+    </button>
 
     <div class="note">
-      Estimated calculation based on FBR tax slabs (2025–26)
+      Estimated calculation based on Pakistan tax slabs (2025–26)
     </div>
-<button class="share-btn" onclick="shareWhatsApp()">
-  Share on WhatsApp
-</button>
+
   </div>
 
+  <script src="script.js"></script>
 </body>
-
-<script src="script.js"></script>
 </html>
