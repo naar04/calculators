@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Zakat Engine v2 Pakistan | Stable (Silver) Tola-Based Calculator</title>
+<title>Zakat Engine v2 Pakistan | Stable Tola-Based Calculator</title>
 
 <meta name="description" content="Stable and accurate Zakat calculator for Pakistan using tola system. No errors, no mixed units, correct nisab logic, and clean financial engine.">
 
@@ -67,3 +67,76 @@ button{
 
 .good{ background:green; }
 .warn{ background:orange; }
+
+  <header>
+<h1>Zakat Engine v2</h1>
+<p>Stable Financial Calculation System</p>
+</header>
+
+<div class="container">
+
+<input type="number" id="cash" placeholder="Cash (PKR)">
+<input type="number" id="gold" placeholder="Gold (Tola)">
+<input type="number" id="silver" placeholder="Silver (Tola)">
+<input type="number" id="business" placeholder="Business / Investments (PKR)">
+<input type="number" id="liabilities" placeholder="Liabilities (PKR)">
+
+<button onclick="calculate()">Calculate Zakat</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
+  <script>
+
+// ===== STABLE MARKET PRICES (for valuation only) =====
+let goldPerGram = 22000;
+let silverPerGram = 250;
+
+// convert to TOLA ONCE (no repeated conversion bugs)
+const GRAM_TO_TOLA = 11.66;
+
+// derived stable values
+let goldPerTola = goldPerGram * GRAM_TO_TOLA;
+let silverPerTola = silverPerGram * GRAM_TO_TOLA;
+
+// ===== CORE ENGINE =====
+function calculate(){
+
+  let cash = +document.getElementById('cash').value || 0;
+  let goldTola = +document.getElementById('gold').value || 0;
+  let silverTola = +document.getElementById('silver').value || 0;
+  let business = +document.getElementById('business').value || 0;
+  let liabilities = +document.getElementById('liabilities').value || 0;
+
+  // asset values (STRICT TOLA SYSTEM)
+  let goldValue = goldTola * goldPerTola;
+  let silverValue = silverTola * silverPerTola;
+
+  let totalAssets = cash + goldValue + silverValue + business;
+  let netWealth = totalAssets - liabilities;
+
+  // ===== FIXED NISAB (SILVER ONLY STANDARD) =====
+  let nisab = 52.5 * silverPerTola;
+
+  let zakat = 0;
+
+  if(netWealth >= nisab){
+    zakat = netWealth * 0.025;
+  }
+
+  let status = netWealth >= nisab ? "Eligible for Zakat" : "Not Eligible";
+
+  document.getElementById("result").innerHTML = `
+    <b>Net Wealth:</b> PKR ${netWealth.toFixed(0)}<br>
+    <b>Nisab:</b> PKR ${nisab.toFixed(0)}<br>
+    <b>Zakat Payable:</b> PKR ${zakat.toFixed(0)}<br><br>
+    <span class="badge ${netWealth >= nisab ? 'good' : 'warn'}">${status}</span>
+  `;
+}
+
+</script>
+
+
+
+                                
