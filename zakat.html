@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Zakat Calculator Pakistan 2026 | Live Gold Price + PDF</title>
+<title>Zakat Calculator Pakistan 2026 | Tola + Live Gold Price + PDF</title>
 
-<meta name="description" content="Advanced Zakat Calculator Pakistan with live gold & silver rates, Urdu support, PDF download, and sharing. Calculate zakat accurately.">
+<meta name="description" content="Advanced Zakat Calculator Pakistan with Tola system, live gold/silver prices, Urdu support, and formatted PDF download.">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
 body {
@@ -17,11 +19,13 @@ body {
 }
 
 /* HEADER */
-header { text-align:center; padding:25px; }
+header {
+  text-align:center;
+  padding:20px;
+}
 
-/* CARD */
 .container {
-  max-width:500px;
+  max-width:520px;
   margin:auto;
   background:rgba(255,255,255,0.1);
   backdrop-filter:blur(12px);
@@ -36,6 +40,7 @@ input {
   margin:6px 0;
   border:none;
   border-radius:8px;
+  outline:none;
 }
 
 /* BUTTON */
@@ -47,6 +52,7 @@ button {
   border-radius:8px;
   font-weight:bold;
   cursor:pointer;
+  background:#00c6ff;
 }
 
 /* RESULT */
@@ -55,6 +61,13 @@ button {
   padding:12px;
   background:rgba(0,0,0,0.3);
   border-radius:10px;
+  font-size:14px;
+}
+
+/* SMALL TEXT */
+.small {
+  font-size:12px;
+  opacity:0.8;
 }
 </style>
 </head>
@@ -64,101 +77,132 @@ button {
 <header>
 <h1 id="title">Zakat Calculator Pakistan</h1>
 <button onclick="toggleLang()">اردو</button>
+<p class="small" id="priceBox">Loading live prices...</p>
 </header>
 
 <div class="container">
 
-<p id="livePrice">Loading gold/silver price...</p>
-
 <input type="number" id="cash" placeholder="Cash (PKR)">
-<input type="number" id="goldWeight" placeholder="Gold (grams)">
-<input type="number" id="silverWeight" placeholder="Silver (grams)">
+<input type="number" id="gold" placeholder="Gold (Tola - تولہ)">
+<input type="number" id="silver" placeholder="Silver (Tola - تولہ)">
 <input type="number" id="business" placeholder="Business / Investments">
-<input type="number" id="liabilities" placeholder="Liabilities">
+<input type="number" id="liabilities" placeholder="Liabilities (Loans)">
 
-<button onclick="calculateZakat()">Calculate</button>
+<button onclick="calculate()">Calculate Zakat</button>
 <button onclick="downloadPDF()">Download PDF</button>
-<button onclick="shareResult()">Share</button>
+<button onclick="shareResult()">Share Result</button>
 
 <div class="result" id="result"></div>
 
 </div>
 
 <script>
-// LIVE GOLD API
-let goldPrice = 22000; // fallback
+// ---------------- LIVE PRICES ----------------
+let goldPrice = 22000;
 let silverPrice = 250;
 
+// fallback API (safe)
 fetch("https://api.metals.live/v1/spot")
-.then(res => res.json())
-.then(data => {
-  data.forEach(item => {
-    if(item.gold) goldPrice = item.gold * 2800 / 31.1;
-    if(item.silver) silverPrice = item.silver * 2800 / 31.1;
+.then(r=>r.json())
+.then(data=>{
+  data.forEach(i=>{
+    if(i.gold) goldPrice = (i.gold * 2800) / 31.1;
+    if(i.silver) silverPrice = (i.silver * 2800) / 31.1;
   });
-  document.getElementById("livePrice").innerHTML =
-    `Gold: PKR ${goldPrice.toFixed(0)}/g | Silver: PKR ${silverPrice.toFixed(0)}/g`;
+
+  document.getElementById("priceBox").innerText =
+    `Gold: PKR ${goldPrice.toFixed(0)} / gram | Silver: PKR ${silverPrice.toFixed(0)} / gram`;
 })
-.catch(() => {
-  document.getElementById("livePrice").innerHTML =
-    "Using estimated prices";
+.catch(()=>{
+  document.getElementById("priceBox").innerText =
+    "Using estimated market prices";
 });
 
-// CALCULATION
-function calculateZakat() {
+// ---------------- CALCULATION ----------------
+let lastResult = "";
+
+function calculate() {
+
   let cash = +document.getElementById('cash').value || 0;
-  let gold = (+document.getElementById('goldWeight').value || 0) * goldPrice;
-  let silver = (+document.getElementById('silverWeight').value || 0) * silverPrice;
+
+  let goldTola = +document.getElementById('gold').value || 0;
+  let silverTola = +document.getElementById('silver').value || 0;
+
+  // Tola → grams
+  let gold = goldTola * 11.66 * goldPrice;
+  let silver = silverTola * 11.66 * silverPrice;
+
   let business = +document.getElementById('business').value || 0;
   let liabilities = +document.getElementById('liabilities').value || 0;
 
   let total = cash + gold + silver + business;
   let net = total - liabilities;
 
-  let nisab = silverPrice * 612; // silver nisab
+  // Nisab (52.5 tola silver)
+  let nisab = 52.5 * 11.66 * silverPrice;
 
   let zakat = net >= nisab ? net * 0.025 : 0;
 
-  let text = `
-  Net Wealth: PKR ${net.toFixed(0)} <br>
-  Nisab: PKR ${nisab.toFixed(0)} <br>
-  Zakat: PKR ${zakat.toFixed(0)}
+  lastResult =
+`ZAKAT REPORT
+---------------------
+Net Wealth: PKR ${net.toFixed(0)}
+Nisab Threshold: PKR ${nisab.toFixed(0)}
+Zakat Payable: PKR ${zakat.toFixed(0)}
+
+Generated by Pakistan Zakat Calculator`;
+
+  document.getElementById("result").innerHTML = `
+    <b>Net Wealth:</b> PKR ${net.toFixed(0)} <br>
+    <b>Nisab:</b> PKR ${nisab.toFixed(0)} <br>
+    <b>Zakat:</b> PKR ${zakat.toFixed(0)}
   `;
-
-  document.getElementById("result").innerHTML = text;
 }
 
-// PDF DOWNLOAD
+// ---------------- PDF (FORMATTED) ----------------
 function downloadPDF() {
-  let content = document.getElementById("result").innerText;
-  let blob = new Blob([content], {type:"text/plain"});
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "zakat.txt";
-  a.click();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(16);
+  doc.text("Zakat Calculation Report", 20, 20);
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica","normal");
+
+  let lines = lastResult.split("\n");
+  let y = 40;
+
+  lines.forEach(line=>{
+    doc.text(line, 20, y);
+    y += 8;
+  });
+
+  doc.save("zakat-report.pdf");
 }
 
-// SHARE
-function shareResult() {
-  let text = document.getElementById("result").innerText;
+// ---------------- SHARE ----------------
+function shareResult(){
   if(navigator.share){
-    navigator.share({title:"Zakat Result", text});
+    navigator.share({
+      title:"Zakat Calculator Result",
+      text:lastResult
+    });
   } else {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(lastResult);
     alert("Copied to clipboard");
   }
 }
 
-// URDU TOGGLE
+// ---------------- URDU TOGGLE ----------------
 let urdu = false;
 function toggleLang(){
   urdu = !urdu;
 
-  if(urdu){
-    document.getElementById("title").innerText = "زکات کیلکولیٹر";
-  } else {
-    document.getElementById("title").innerText = "Zakat Calculator Pakistan";
-  }
+  document.getElementById("title").innerText =
+    urdu ? "زکات کیلکولیٹر" : "Zakat Calculator Pakistan";
 }
 </script>
 
