@@ -1,23 +1,20 @@
 {
-  "name": "Calculators PK",
-  "short_name": "CalcPK",
-  "description": "Free online calculators, converters and smart utility tools.",
-  "start_url": "/calculators/",
-  "scope": "/calculators/",
+  "short_name": "Calculators",
+  "name": "Free Online Tools Pakistan",
+  "start_url": "https://calculators-pk.blogspot.com/p/home.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#000000",
+  "background_color": "#f8fafc",
   "theme_color": "#000000",
   "icons": [
     {
       "src": "https://naar04.github.io/calculators/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
       "src": "https://naar04.github.io/calculators/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ]
 }
