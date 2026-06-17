@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lucky Future Predictor</title>
+    
+    <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-surface: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --primary-accent: #6200ee;
+            --border-color: #dee2e6;
+            --bar-bg: #e9ecef;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #121212;
+            --bg-surface: #1e1e1e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --primary-accent: #bb86fc;
+            --border-color: #333333;
+            --bar-bg: #2d2d2d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-accent);
+        }
+
+        .theme-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .segmented-control {
+            display: flex;
+            background-color: var(--bar-bg);
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .segmented-control label {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .segmented-control input[type="radio"] {
+            display: none;
+        }
+
+        .segmented-control input[type="radio"]:checked + label {
+            background-color: var(--bg-surface);
+            color: var(--primary-accent);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--primary-accent);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading Spinner */
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 0;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bar-bg);
+            border-top: 4px solid var(--primary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Progress Metrics Bars */
+        .metric-row {
+            margin-bottom: 16px;
+        }
+        
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .progress-track {
+            background-color: var(--bar-bg);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-accent);
+            border-radius: 6px;
+            transition: width 1s cubic-bezier(0.1, 1, 0.1, 1);
+        }
+
+        /* Badges grid */
+        .grid-badges {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .badge-box {
+            background-color: var(--bg-primary);
+            padding: 12px 6px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .badge-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .badge-value {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .color-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        /* History items list UI */
+        .history-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="app-title">🔮 Cosmic Matrix</div>
+        <button id="themeToggle" class="theme-btn">Dark Mode</button>
+    </div>
+
+    <div id="formPanel">
+        <div class="card">
+            <div class="input-group">
+                <label for="userName">Enter Name</label>
+                <input type="text" id="userName" placeholder="Your name...">
+            </div>
+
+            <div class="input-group">
+                <label for="userAge">Enter Age</label>
+                <input type="number" id="userAge" placeholder="Your age..." min="1" max="120">
+            </div>
+
+            <div class="input-group">
+                <label>Select Gender</label>
+                <div class="segmented-control">
+                    <input type="radio" id="gMale" name="userGender" value="Male" checked>
+                    <label for="gMale">Male</label>
+
+                    <input type="radio" id="gFemale" name="userGender" value="Female">
+                    <label for="gFemale">Female</label>
+                </div>
+            </div>
+
+            <button id="predictBtn" class="btn" style="margin-top: 12px;">Calculate Future Indices</button>
+        </div>
+
+        <div class="card">
+            <div class="history-title-row">
+                <label style="margin: 0;">Recent Insight Matrix Logs</label>
+                <button id="clearHistory" class="clear-btn">Clear Logs</button>
+            </div>
+            <ul id="historyList" class="history-list">
+                </ul>
+        </div>
+    </div>
+
+    <div id="loadingPanel" class="card hidden">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p style="font-weight: 600; color: var(--text-secondary);">Decrypting Cosmic Alignments...</p>
+        </div>
+    </div>
+
+    <div id="resultsPanel" class="hidden">
+        <div class="card">
+            <h2 id="greetUser" style="margin-bottom: 20px; font-size: 1.3rem; text-align: center;">Hello!</h2>
+            
+            <div class="metric-row">
+                <div class="metric-header">
+                    <span>Wealth Index</span>
+                    <span id="txtWealth">0%</span>
+                </div>
+                <div class="progress-track"><div id="barWealth" class="progress-fill"></div></div>
+            </div>
+
+            <div class="metric-row">
+                <div class="metric-header">
+                    <span>Love Alignment</span>
+                    <span id="txtLove">0%</span>
+                </div>
+                <div class="progress-track"><div id="barLove" class="progress-fill"></div></div>
+            </div>
+
+            <div class="metric-row">
+                <div class="metric-header">
+                    <span>Career Vector</span>
+                    <span id="txtCareer">0%</span>
+                </div>
+                <div class="progress-track"><div id="barCareer" class="progress-fill"></div></div>
+            </div>
+
+            <div class="grid-badges">
+                <div class="badge-box">
+                    <div class="badge-title">Lucky Num</div>
+                    <div id="valNumber" class="badge-value">-</div>
+                </div>
+                <div class="badge-box">
+                    <div class="badge-title">Lucky Color</div>
+                    <div id="valColor" class="badge-value">-</div>
+                </div>
+                <div class="badge-box">
+                    <div class="badge-title">Lucky Day</div>
+                    <div id="valDay" class="badge-value">-</div>
+                </div>
+            </div>
+        </div>
+
+        <button id="backBtn" class="btn" style="background-color: var(--text-secondary);">Check Another Profile</button>
+    </div>
+
+    <script>
+        const colorsPool = [
+            { name: 'Crimson', hex: '#DC143C' },
+            { name: 'Azure', hex: '#007FFF' },
+            { name: 'Emerald', hex: '#50C878' },
+            { name: 'Amber', hex: '#FFBF00' },
+            { name: 'Amethyst', hex: '#9966CC' }
+        ];
+        const daysPool = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        // Elements Tracking Cache
+        const elements = {
+            themeToggle: document.getElementById('themeToggle'),
+            formPanel: document.getElementById('formPanel'),
+            loadingPanel: document.getElementById('loadingPanel'),
+            resultsPanel: document.getElementById('resultsPanel'),
+            predictBtn: document.getElementById('predictBtn'),
+            backBtn: document.getElementById('backBtn'),
+            clearHistory: document.getElementById('clearHistory'),
+            historyList: document.getElementById('historyList'),
+            userName: document.getElementById('userName'),
+            userAge: document.getElementById('userAge'),
+            greetUser: document.getElementById('greetUser'),
+            txtWealth: document.getElementById('txtWealth'),
+            txtLove: document.getElementById('txtLove'),
+            txtCareer: document.getElementById('txtCareer'),
+            barWealth: document.getElementById('barWealth'),
+            barLove: document.getElementById('barLove'),
+            barCareer: document.getElementById('barCareer'),
+            valNumber: document.getElementById('valNumber'),
+            valColor: document.getElementById('valColor'),
+            valDay: document.getElementById('valDay')
+        };
+
+        // Fallback for isolated Local Storage Array inside App Inventor Native WebViews
+        let backupHistoryList = [];
+        let currentTheme = 'light';
+
+        // Dark/Light Theme Switching Functionality
+        elements.themeToggle.addEventListener('click', function() {
+            currentTheme = (currentTheme === 'light') ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            elements.themeToggle.textContent = currentTheme === 'light' ? 'Dark Mode' : 'Light Mode';
+        });
+
+        // Seed calculations configuration framework mapping engine
+        function generateCosmicMetrics(name, age, gender) {
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const seedText = `${name.trim().toLowerCase()}-${age}-${gender}-${dateStr}`;
+            
+            let hash = 0;
+            for (let i = 0; i < seedText.length; i++) {
+                hash = seedText.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            const lcgValue = (modifier) => {
+                const x = Math.abs(Math.sin(hash + modifier));
+                return x - Math.floor(x);
+            };
+
+            return {
+                wealth: Math.floor(lcgValue(1) * 45) + 55,
+                love: Math.floor(lcgValue(2) * 45) + 55,
+                career: Math.floor(lcgValue(3) * 45) + 55,
+                luckyNum: Math.floor(lcgValue(4) * 98) + 1,
+                luckyColorObj: colorsPool[Math.floor(lcgValue(5) * colorsPool.length)],
+                luckyDay: daysPool[Math.floor(lcgValue(6) * daysPool.length)]
+            };
+        }
+
+        // Native action listeners
+        elements.predictBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const name = elements.userName.value.trim();
+            const age = elements.userAge.value.trim();
+            
+            // Fixed Radio Evaluator logic: Bypasses Android DOM change lag failures
+            let checkedGender = "Male";
+            const maleRadio = document.getElementById('gMale');
+            const femaleRadio = document.getElementById('gFemale');
+            if (femaleRadio && femaleRadio.checked) {
+                checkedGender = "Female";
+            }
+
+            if (!name || !age) {
+                alert('Please input a valid name and age.');
+                return;
+            }
+
+            // UI Transitions
+            elements.formPanel.classList.add('hidden');
+            elements.loadingPanel.classList.remove('hidden');
+
+            setTimeout(function() {
+                const calculatedData = generateCosmicMetrics(name, age, checkedGender);
+                
+                // Show output data metrics
+                elements.greetUser.textContent = `Cosmic Profile: ${name}`;
+                elements.txtWealth.textContent = calculatedData.wealth + '%';
+                elements.txtLove.textContent = calculatedData.love + '%';
+                elements.txtCareer.textContent = calculatedData.career + '%';
+
+                // Display badge configurations
+                elements.valNumber.textContent = calculatedData.luckyNum;
+                elements.valColor.innerHTML = `<span class="color-dot" style="background-color: ${calculatedData.luckyColorObj.hex}"></span>${calculatedData.luckyColorObj.name}`;
+                elements.valDay.textContent = calculatedData.luckyDay;
+
+                // Push insight matrix tracking log
+                const averageLuck = Math.round((calculatedData.wealth + calculatedData.love + calculatedData.career) / 3);
+                const itemLog = { name: name, score: averageLuck };
+                backupHistoryList.unshift(itemLog);
+                if (backupHistoryList.length > 5) backupHistoryList.pop();
+                
+                renderLogs();
+
+                elements.loadingPanel.classList.add('hidden');
+                elements.resultsPanel.classList.remove('hidden');
+
+                // Delayed UI display logic for full css-bar load transitions
+                setTimeout(function() {
+                    elements.barWealth.style.width = calculatedData.wealth + '%';
+                    elements.barLove.style.width = calculatedData.love + '%';
+                    elements.barCareer.style.width = calculatedData.career + '%';
+                }, 100);
+
+            }, 1500);
+        });
+
+        elements.backBtn.addEventListener('click', function() {
+            elements.barWealth.style.width = '0%';
+            elements.barLove.style.width = '0%';
+            elements.barCareer.style.width = '0%';
+            elements.resultsPanel.classList.add('hidden');
+            elements.formPanel.classList.remove('hidden');
+        });
+
+        function renderLogs() {
+            elements.historyList.innerHTML = '';
+            if (backupHistoryList.length === 0) {
+                elements.historyList.innerHTML = '<li class="history-item" style="color: var(--text-secondary)">No logs generated yet</li>';
+                return;
+            }
+            backupHistoryList.forEach(function(item) {
+                const entry = document.createElement('li');
+                entry.className = 'history-item';
+                entry.innerHTML = `<span><strong>${item.name}</strong></span><span style="color:var(--primary-accent); font-weight:700;">${item.score}% Luck</span>`;
+                elements.historyList.appendChild(entry);
+            });
+        }
+
+        elements.clearHistory.addEventListener('click', function() {
+            backupHistoryList = [];
+            renderLogs();
+        });
+
+        // Initialize historical fallback array configuration list
+        renderLogs();
+    </script>
+</body>
+</html>
