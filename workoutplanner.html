@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Workout Planner &mdash; Track Programs, Exercises &amp; Progress</title>
+<meta name="description" content="A complete offline workout planner: build programs, log exercises, track measurements and progress, all stored privately on your device.">
+<meta name="theme-color" content="#00000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8B%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --wp-gap-xs:4px; --wp-gap-sm:8px; --wp-gap-md:16px; --wp-gap-lg:24px; --wp-gap-xl:36px;
+    --wp-radius:10px; --wp-radius-sm:6px;
+    --wp-border: currentColor;
+    --wp-line-op:0.16;
+    --wp-fill-op:0.06;
+    --wp-fill-op-strong:0.12;
+    --wp-accent-op:0.9;
+  }
+  #wp-root, #wp-root *{ box-sizing:border-box; }
+  #wp-root{
+    color:inherit; background:inherit; font-family:inherit;
+    max-width:960px; margin:0 auto; line-height:1.45; font-size:15px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #wp-root a{ color:inherit; }
+  #wp-root button, #wp-root input, #wp-root select, #wp-root textarea{
+    font-family:inherit; color:inherit; background:inherit;
+  }
+  #wp-root h1,#wp-root h2,#wp-root h3,#wp-root h4{ color:inherit; margin:0 0 var(--wp-gap-sm) 0; line-height:1.25; }
+  #wp-root h1{ font-size:1.5rem; }
+  #wp-root h2{ font-size:1.15rem; }
+  #wp-root h3{ font-size:1rem; }
+  #wp-root p{ margin:0 0 var(--wp-gap-sm) 0; }
+  #wp-root .wp-muted{ opacity:0.7; font-size:0.88rem; }
+  #wp-root .wp-small{ font-size:0.82rem; }
+
+  #wp-root .wp-card{
+    border:1px solid var(--wp-border); border-color:color-mix(in srgb, currentColor var(--wp-line-op-pct,16%), transparent);
+    border-radius:var(--wp-radius); padding:var(--wp-gap-md); margin-bottom:var(--wp-gap-md);
+    background:color-mix(in srgb, currentColor 4%, transparent);
+  }
+  #wp-root .wp-card.wp-warn{
+    background:color-mix(in srgb, currentColor 8%, transparent);
+    border-style:dashed;
+  }
+  #wp-root .wp-row{ display:flex; gap:var(--wp-gap-sm); flex-wrap:wrap; align-items:center; }
+  #wp-root .wp-col{ display:flex; flex-direction:column; gap:var(--wp-gap-sm); }
+  #wp-root .wp-grid{ display:grid; gap:var(--wp-gap-sm); grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); }
+  #wp-root .wp-grid2{ display:grid; gap:var(--wp-gap-sm); grid-template-columns:1fr 1fr; }
+  @media (max-width:520px){ #wp-root .wp-grid2{ grid-template-columns:1fr; } }
+  #wp-root .wp-spacer{ flex:1; }
+
+  #wp-root button{
+    cursor:pointer; border:1px solid currentColor; border-radius:var(--wp-radius-sm);
+    padding:8px 14px; background:transparent; font-size:0.9rem; transition:opacity .15s ease, transform .05s ease;
+  }
+  #wp-root button:hover{ opacity:0.75; }
+  #wp-root button:active{ transform:scale(0.98); }
+  #wp-root button:focus-visible, #wp-root input:focus-visible, #wp-root select:focus-visible, #wp-root textarea:focus-visible, #wp-root [tabindex]:focus-visible{
+    outline:2px solid currentColor; outline-offset:2px;
+  }
+  #wp-root button.wp-primary{ background:color-mix(in srgb, currentColor 14%, transparent); font-weight:600; }
+  #wp-root button.wp-ghost{ border-color:transparent; opacity:0.75; }
+  #wp-root button.wp-ghost:hover{ opacity:1; }
+  #wp-root button.wp-danger{ border-color:currentColor; }
+  #wp-root button:disabled{ opacity:0.35; cursor:not-allowed; }
+  #wp-root button.wp-icon{ padding:6px 9px; line-height:1; }
+
+  #wp-root input[type=text], #wp-root input[type=number], #wp-root input[type=date], #wp-root input[type=time],
+  #wp-root select, #wp-root textarea{
+    border:1px solid currentColor; border-radius:var(--wp-radius-sm); padding:8px 10px; width:100%;
+    background:color-mix(in srgb, currentColor 3%, transparent);
+  }
+  #wp-root textarea{ resize:vertical; min-height:60px; }
+  #wp-root label{ font-size:0.82rem; opacity:0.85; display:block; margin-bottom:2px; }
+  #wp-root .wp-field{ display:flex; flex-direction:column; gap:2px; }
+
+  #wp-root .wp-tag{
+    display:inline-block; font-size:0.72rem; padding:2px 8px; border-radius:99px;
+    border:1px solid currentColor; opacity:0.85; white-space:nowrap;
+  }
+  #wp-root .wp-badge{
+    display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; padding:2px 8px;
+    border-radius:99px; background:color-mix(in srgb, currentColor 14%, transparent);
+  }
+
+  /* App shell */
+  #wp-root header.wp-appbar{
+    position:sticky; top:0; z-index:20; background:inherit; padding:var(--wp-gap-sm) 0;
+    border-bottom:1px solid color-mix(in srgb, currentColor 16%, transparent);
+  }
+  #wp-root .wp-brand{ display:flex; align-items:center; gap:8px; }
+  #wp-root .wp-brand .wp-logo{ font-size:1.4rem; }
+  #wp-root nav.wp-tabs{
+    display:flex; gap:2px; overflow-x:auto; padding-bottom:2px; -ms-overflow-style:none; scrollbar-width:none;
+  }
+  #wp-root nav.wp-tabs::-webkit-scrollbar{ display:none; }
+  #wp-root nav.wp-tabs button{
+    border:none; border-bottom:2px solid transparent; border-radius:0; white-space:nowrap;
+    padding:8px 10px; font-size:0.85rem; opacity:0.65;
+  }
+  #wp-root nav.wp-tabs button.wp-active{ border-bottom-color:currentColor; opacity:1; font-weight:600; }
+
+  #wp-root main.wp-view{ padding:var(--wp-gap-md) 0 60px; }
+  #wp-root section.wp-panel{ display:none; }
+  #wp-root section.wp-panel.wp-active{ display:block; }
+
+  /* Dashboard stat tiles */
+  #wp-root .wp-stat{ text-align:left; }
+  #wp-root .wp-stat .wp-num{ font-size:1.5rem; font-weight:700; }
+  #wp-root .wp-stat .wp-label{ font-size:0.75rem; opacity:0.7; }
+
+  #wp-root .wp-progressbar{
+    height:8px; border-radius:99px; background:color-mix(in srgb, currentColor 14%, transparent); overflow:hidden;
+  }
+  #wp-root .wp-progressbar > div{ height:100%; background:currentColor; }
+
+  #wp-root .wp-list{ list-style:none; margin:0; padding:0; }
+  #wp-root .wp-list li{
+    padding:8px 0; border-bottom:1px solid color-mix(in srgb, currentColor 12%, transparent);
+    display:flex; align-items:center; gap:8px;
+  }
+  #wp-root .wp-list li:last-child{ border-bottom:none; }
+
+  #wp-root .wp-exercise-card{
+    border:1px solid color-mix(in srgb, currentColor 16%, transparent); border-radius:var(--wp-radius-sm);
+    padding:10px; margin-bottom:6px; cursor:grab;
+  }
+  #wp-root .wp-exercise-card.wp-dragging{ opacity:0.4; }
+  #wp-root .wp-drop-target{ outline:2px dashed currentColor; }
+
+  #wp-root .wp-modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex;
+    align-items:center; justify-content:center; z-index:100; padding:16px;
+  }
+  #wp-root .wp-modal{
+    background:inherit; color:inherit; border:1px solid currentColor; border-radius:var(--wp-radius);
+    max-width:560px; width:100%; max-height:88vh; overflow:auto; padding:var(--wp-gap-lg);
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  #wp-root .wp-hidden{ display:none !important; }
+
+  #wp-root table.wp-table{ width:100%; border-collapse:collapse; font-size:0.86rem; }
+  #wp-root table.wp-table th, #wp-root table.wp-table td{
+    text-align:left; padding:6px 8px; border-bottom:1px solid color-mix(in srgb, currentColor 12%, transparent);
+  }
+  #wp-root table.wp-table th{ opacity:0.7; font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:.03em; }
+
+  #wp-root .wp-toast-wrap{ position:fixed; bottom:16px; left:0; right:0; display:flex; justify-content:center; z-index:200; pointer-events:none; }
+  #wp-root .wp-toast{
+    background:#222; color:#fff; padding:10px 16px; border-radius:99px; font-size:0.85rem; box-shadow:0 6px 20px rgba(0,0,0,.3);
+    animation:wp-toast-in .2s ease;
+  }
+  @keyframes wp-toast-in{ from{ transform:translateY(10px); opacity:0;} to{ transform:translateY(0); opacity:1; } }
+
+  #wp-root .wp-calendar-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  #wp-root .wp-cal-cell{
+    aspect-ratio:1; border:1px solid color-mix(in srgb, currentColor 14%, transparent); border-radius:6px;
+    padding:4px; font-size:0.72rem; display:flex; flex-direction:column; gap:2px; position:relative;
+  }
+  #wp-root .wp-cal-dot{ width:6px; height:6px; border-radius:50%; background:currentColor; display:inline-block; }
+  #wp-root .wp-cal-cell.wp-today{ border-color:currentColor; border-width:2px; }
+  #wp-root .wp-cal-cell.wp-empty{ opacity:0.25; }
+
+  #wp-root .wp-favstar{ cursor:pointer; background:none; border:none; padding:0 4px; font-size:1rem; }
+
+  @media print{
+    body *{ visibility:hidden !important; }
+    #wp-print-area, #wp-print-area *{ visibility:visible !important; }
+    #wp-print-area{ position:absolute; left:0; top:0; width:100%; color:#000; background:#fff; }
+    #wp-root header, #wp-root nav, #wp-root .wp-no-print{ display:none !important; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #wp-root *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="wp-root">
+
+  <header class="wp-appbar">
+    <div class="wp-row wp-brand" style="justify-content:space-between;">
+      <div class="wp-row" style="gap:8px;">
+        <span class="wp-logo" aria-hidden="true">🏋️</span>
+        <h1 style="margin:0;">Workout Planner</h1>
+      </div>
+      <div class="wp-row wp-no-print">
+        <button class="wp-icon wp-ghost" id="wp-btn-search" title="Search" aria-label="Search">🔎</button>
+        <button class="wp-icon wp-ghost" id="wp-btn-quickstart" title="Quick start workout">▶</button>
+      </div>
+    </div>
+    <nav class="wp-tabs wp-no-print" id="wp-tabs" role="tablist" aria-label="Sections">
+      <button data-tab="dashboard" class="wp-active" role="tab">Dashboard</button>
+      <button data-tab="programs" role="tab">Programs</button>
+      <button data-tab="exercises" role="tab">Exercises</button>
+      <button data-tab="log" role="tab">Log</button>
+      <button data-tab="measurements" role="tab">Body</button>
+      <button data-tab="goals" role="tab">Goals</button>
+      <button data-tab="calendar" role="tab">Calendar</button>
+      <button data-tab="stats" role="tab">Stats</button>
+      <button data-tab="templates" role="tab">Templates</button>
+      <button data-tab="settings" role="tab">Settings</button>
+      <button data-tab="help" role="tab">Help</button>
+    </nav>
+  </header>
+
+  <main class="wp-view">
+
+    <!-- DASHBOARD -->
+    <section class="wp-panel wp-active" id="panel-dashboard" data-panel="dashboard">
+      <div class="wp-row" style="justify-content:space-between; align-items:flex-start;">
+        <div>
+          <h2 id="wp-greeting">Welcome back</h2>
+          <p class="wp-muted" id="wp-today-date"></p>
+        </div>
+        <div class="wp-row">
+          <button class="wp-primary" id="wp-continue-btn">Continue last workout</button>
+        </div>
+      </div>
+
+      <div class="wp-grid" id="wp-dash-stats"></div>
+
+      <div class="wp-card">
+        <div class="wp-row" style="justify-content:space-between;">
+          <h3>Today's workout</h3>
+          <button class="wp-ghost wp-small" data-tab-link="programs">Manage programs</button>
+        </div>
+        <div id="wp-today-workout"></div>
+      </div>
+
+      <div class="wp-card">
+        <h3>Weekly progress</h3>
+        <div class="wp-progressbar" style="margin-bottom:6px;"><div id="wp-week-bar" style="width:0%"></div></div>
+        <p class="wp-small wp-muted" id="wp-week-text"></p>
+      </div>
+
+      <div class="wp-card">
+        <h3>Recent activity</h3>
+        <ul class="wp-list" id="wp-recent-activity"></ul>
+      </div>
+    </section>
+
+    <!-- PROGRAMS -->
+    <section class="wp-panel" id="panel-programs" data-panel="programs">
+      <div class="wp-row" style="justify-content:space-between;">
+        <h2>Programs</h2>
+        <button class="wp-primary" id="wp-new-program">+ New program</button>
+      </div>
+      <p class="wp-muted">A program is a training goal (Strength, Hypertrophy, Weight Loss, Powerlifting, Bodybuilding, CrossFit, Cardio, HIIT, Running, Cycling, Yoga, Home Workout, Calisthenics, Custom) made of workout days.</p>
+      <div id="wp-program-list" class="wp-col"></div>
+    </section>
+
+    <!-- Program editor (used inside programs panel dynamically) -->
+    <section class="wp-panel" id="panel-programEditor" data-panel="programEditor">
+      <button class="wp-ghost" data-tab-link="programs">&larr; Back to programs</button>
+      <div id="wp-program-editor"></div>
+    </section>
+
+    <!-- EXERCISES -->
+    <section class="wp-panel" id="panel-exercises" data-panel="exercises">
+      <h2>Exercise library</h2>
+      <div class="wp-row" style="margin-bottom:8px;">
+        <input type="text" id="wp-ex-search" placeholder="Search exercises...">
+      </div>
+      <div class="wp-row" style="margin-bottom:8px;">
+        <select id="wp-ex-filter-cat"><option value="">All categories</option></select>
+        <select id="wp-ex-filter-equip"><option value="">All equipment</option></select>
+        <select id="wp-ex-filter-diff"><option value="">All difficulty</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select>
+        <label class="wp-row wp-small" style="gap:4px;"><input type="checkbox" id="wp-ex-fav-only" style="width:auto;"> Favorites only</label>
+      </div>
+      <p class="wp-small wp-muted" id="wp-ex-count"></p>
+      <div id="wp-ex-list" class="wp-col"></div>
+      <div class="wp-row" id="wp-ex-pager" style="justify-content:center; margin-top:10px;"></div>
+    </section>
+
+    <!-- LOG -->
+    <section class="wp-panel" id="panel-log" data-panel="log">
+      <h2>Log a session</h2>
+      <div class="wp-card">
+        <div class="wp-field"><label>Date</label><input type="date" id="wp-log-date"></div>
+        <div class="wp-field"><label>Workout / program day</label><select id="wp-log-day"><option value="">Freestyle (no plan)</option></select></div>
+        <div id="wp-log-entries" class="wp-col"></div>
+        <button class="wp-small" id="wp-log-add-exercise">+ Add exercise</button>
+        <div class="wp-field" style="margin-top:8px;"><label>Session notes</label><textarea id="wp-log-notes" placeholder="How did it feel? Energy, pain, anything to remember..."></textarea></div>
+        <div class="wp-grid2">
+          <div class="wp-field"><label>Energy level (1-10)</label><input type="number" id="wp-log-energy" min="1" max="10"></div>
+          <div class="wp-field"><label>Pain level (0-10)</label><input type="number" id="wp-log-pain" min="0" max="10"></div>
+        </div>
+        <div class="wp-row" style="margin-top:10px;">
+          <button class="wp-primary" id="wp-log-save">Save session</button>
+          <span class="wp-small wp-muted" id="wp-log-summary"></span>
+        </div>
+      </div>
+      <h3>History</h3>
+      <div class="wp-row">
+        <input type="text" id="wp-history-search" placeholder="Search history & notes...">
+      </div>
+      <div id="wp-history-list" class="wp-col"></div>
+    </section>
+
+    <!-- MEASUREMENTS -->
+    <section class="wp-panel" id="panel-measurements" data-panel="measurements">
+      <h2>Body measurements</h2>
+      <div class="wp-card">
+        <div class="wp-field"><label>Date</label><input type="date" id="wp-m-date"></div>
+        <div class="wp-grid">
+          <div class="wp-field"><label>Weight</label><input type="number" step="0.1" id="wp-m-weight"></div>
+          <div class="wp-field"><label>Height</label><input type="number" step="0.1" id="wp-m-height"></div>
+          <div class="wp-field"><label>Body fat %</label><input type="number" step="0.1" id="wp-m-bodyfat"></div>
+          <div class="wp-field"><label>Neck</label><input type="number" step="0.1" id="wp-m-neck"></div>
+          <div class="wp-field"><label>Chest</label><input type="number" step="0.1" id="wp-m-chest"></div>
+          <div class="wp-field"><label>Waist</label><input type="number" step="0.1" id="wp-m-waist"></div>
+          <div class="wp-field"><label>Hips</label><input type="number" step="0.1" id="wp-m-hips"></div>
+          <div class="wp-field"><label>Thigh</label><input type="number" step="0.1" id="wp-m-thigh"></div>
+          <div class="wp-field"><label>Calves</label><input type="number" step="0.1" id="wp-m-calves"></div>
+          <div class="wp-field"><label>Arms</label><input type="number" step="0.1" id="wp-m-arms"></div>
+          <div class="wp-field"><label>Forearms</label><input type="number" step="0.1" id="wp-m-forearms"></div>
+          <div class="wp-field"><label>Shoulders</label><input type="number" step="0.1" id="wp-m-shoulders"></div>
+        </div>
+        <div class="wp-field" style="margin-top:6px;"><label>Photo note (placeholder — text only, no images stored)</label><input type="text" id="wp-m-photo" placeholder="e.g. front pose, good lighting"></div>
+        <div class="wp-row" style="margin-top:8px;">
+          <button class="wp-primary" id="wp-m-save">Save measurement</button>
+          <span class="wp-small wp-muted" id="wp-m-bmi-out"></span>
+        </div>
+      </div>
+      <h3>Progress</h3>
+      <canvas id="wp-chart-measure" height="160"></canvas>
+      <h3>History</h3>
+      <div id="wp-m-history"></div>
+    </section>
+
+    <!-- GOALS -->
+    <section class="wp-panel" id="panel-goals" data-panel="goals">
+      <div class="wp-row" style="justify-content:space-between;">
+        <h2>Goals</h2>
+        <button class="wp-primary" id="wp-new-goal">+ New goal</button>
+      </div>
+      <div id="wp-goal-list" class="wp-col"></div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="wp-panel" id="panel-calendar" data-panel="calendar">
+      <div class="wp-row" style="justify-content:space-between;">
+        <h2 id="wp-cal-title">Calendar</h2>
+        <div class="wp-row">
+          <button class="wp-icon" id="wp-cal-prev">&lsaquo;</button>
+          <button class="wp-icon" id="wp-cal-next">&rsaquo;</button>
+        </div>
+      </div>
+      <div class="wp-row wp-small wp-muted">
+        <span class="wp-badge"><span class="wp-cal-dot"></span> Completed</span>
+        <span class="wp-badge" style="opacity:.5;"><span class="wp-cal-dot"></span> Rest day</span>
+        <span class="wp-tag">Missed</span>
+        <span class="wp-tag" style="border-style:dashed;">Upcoming</span>
+      </div>
+      <div class="wp-calendar-grid" id="wp-cal-grid" style="margin-top:8px;"></div>
+      <div id="wp-cal-day-detail" class="wp-card wp-hidden"></div>
+    </section>
+
+    <!-- STATS -->
+    <section class="wp-panel" id="panel-stats" data-panel="stats">
+      <h2>Statistics</h2>
+      <div class="wp-grid" id="wp-stats-tiles"></div>
+      <div class="wp-card"><h3>Weekly volume</h3><canvas id="wp-chart-weeklyvol" height="140"></canvas></div>
+      <div class="wp-card"><h3>Workout frequency (last 12 weeks)</h3><canvas id="wp-chart-freq" height="140"></canvas></div>
+      <div class="wp-card"><h3>Muscle groups trained (30 days)</h3><canvas id="wp-chart-muscles" height="160"></canvas></div>
+      <div class="wp-card"><h3>Bodyweight trend</h3><canvas id="wp-chart-bw" height="140"></canvas></div>
+      <div class="wp-card"><h3>Personal records</h3><div id="wp-pr-list"></div></div>
+    </section>
+
+    <!-- TEMPLATES -->
+    <section class="wp-panel" id="panel-templates" data-panel="templates">
+      <div class="wp-row" style="justify-content:space-between;">
+        <h2>Templates</h2>
+        <button class="wp-primary" id="wp-new-template">+ New template</button>
+      </div>
+      <p class="wp-muted">Reusable day templates like Push, Pull, Legs, Upper, Lower, Full Body, PPL or Bro Split. Apply a template to any program day in one click.</p>
+      <div id="wp-template-list" class="wp-col"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="wp-panel" id="panel-settings" data-panel="settings">
+      <h2>Settings</h2>
+
+      <div class="wp-card wp-warn">
+        <strong>⚠️ Your workout data is stored on this device.</strong>
+        <p class="wp-small" style="margin-top:6px;">Most browsers preserve this data, but clearing browser storage, using private browsing, reinstalling the browser, resetting the browser, or factory resetting the device may permanently erase your workout history. For safety, regularly export a backup.</p>
+        <p class="wp-small wp-muted" id="wp-last-backup-note"></p>
+      </div>
+
+      <div class="wp-card">
+        <h3>Profile &amp; units</h3>
+        <div class="wp-grid2">
+          <div class="wp-field"><label>Name</label><input type="text" id="wp-set-name"></div>
+          <div class="wp-field"><label>Units</label><select id="wp-set-units"><option value="metric">Metric (kg/cm)</option><option value="imperial">Imperial (lb/in)</option></select></div>
+          <div class="wp-field"><label>Age</label><input type="number" id="wp-set-age"></div>
+          <div class="wp-field"><label>Gender</label><select id="wp-set-gender"><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div>
+        </div>
+        <button class="wp-small" id="wp-set-save-profile" style="margin-top:8px;">Save profile</button>
+      </div>
+
+      <div class="wp-card">
+        <h3>Reminders</h3>
+        <div class="wp-col wp-small">
+          <label class="wp-row" style="gap:6px;"><input type="checkbox" id="wp-rem-workout" style="width:auto;"> Workout reminder</label>
+          <label class="wp-row" style="gap:6px;"><input type="checkbox" id="wp-rem-hydrate" style="width:auto;"> Hydration reminder (every 2 hours while tab is open)</label>
+          <label class="wp-row" style="gap:6px;"><input type="checkbox" id="wp-rem-stretch" style="width:auto;"> Stretch reminder</label>
+          <label class="wp-row" style="gap:6px;"><input type="checkbox" id="wp-rem-rest" style="width:auto;"> Rest day reminder</label>
+        </div>
+        <button class="wp-small" id="wp-rem-enable" style="margin-top:8px;">Enable browser notifications</button>
+        <p class="wp-small wp-muted">Reminders only fire while this page is open in your browser, since there is no server.</p>
+      </div>
+
+      <div class="wp-card">
+        <h3>Backup &amp; data</h3>
+        <div class="wp-row">
+          <button class="wp-primary" id="wp-backup-export">Export backup (JSON)</button>
+          <button id="wp-backup-import">Import backup</button>
+          <input type="file" id="wp-backup-file" accept="application/json" class="wp-hidden">
+        </div>
+        <div class="wp-row" style="margin-top:8px;">
+          <button id="wp-export-csv-history">Export history CSV</button>
+          <button id="wp-export-csv-measure">Export measurements CSV</button>
+        </div>
+        <div class="wp-row" style="margin-top:8px;">
+          <button id="wp-print-progress">Print progress report</button>
+          <button class="wp-danger" id="wp-reset-data">Reset all data</button>
+        </div>
+        <p class="wp-small wp-muted" id="wp-storage-mode"></p>
+      </div>
+
+      <div class="wp-card">
+        <h3>Install app</h3>
+        <p class="wp-small wp-muted">Install this planner to your home screen for quick, app-like access.</p>
+        <button id="wp-install-btn" disabled>Install app</button>
+      </div>
+    </section>
+
+    <!-- HELP -->
+    <section class="wp-panel" id="panel-help" data-panel="help">
+      <h2>Help</h2>
+      <div class="wp-card">
+        <h3>How to use</h3>
+        <p class="wp-small">Create a <strong>Program</strong> for your goal, add <strong>Workout Days</strong> to it, then add exercises from the library to each day. Use <strong>Log</strong> to record what you actually did &mdash; sets, reps, weight, RPE. The <strong>Dashboard</strong>, <strong>Stats</strong> and <strong>Calendar</strong> update automatically from your logged sessions.</p>
+      </div>
+      <div class="wp-card">
+        <h3>How backup works</h3>
+        <p class="wp-small">Export backup saves everything (programs, exercises, favorites, history, measurements, goals, templates, settings, achievements, notes) into one JSON file named like <code>WorkoutPlanner_2026-07-07.json</code>. Keep this file somewhere safe (cloud drive, email to yourself).</p>
+      </div>
+      <div class="wp-card">
+        <h3>How restore works</h3>
+        <p class="wp-small">Use Import backup and choose a previously exported JSON file. You'll be asked to confirm whether to merge with existing data or overwrite it completely before anything changes.</p>
+      </div>
+      <div class="wp-card">
+        <h3>Migrating to a new device or browser</h3>
+        <p class="wp-small">Export a backup on the old device, transfer the file (email, cloud storage, USB), then import it on the new device before you start logging new workouts there.</p>
+      </div>
+      <div class="wp-card">
+        <h3>FAQ</h3>
+        <p class="wp-small"><strong>Is my data uploaded anywhere?</strong> No. Everything stays in this browser's local storage on this device.</p>
+        <p class="wp-small"><strong>Why did my data disappear?</strong> Clearing site data, private browsing, or reinstalling your browser can erase it. Always keep a backup export.</p>
+        <p class="wp-small"><strong>Can I use kg and cm instead of lb and in?</strong> Yes, switch units anytime in Settings.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="wp-modal-root"></div>
+  <div class="wp-toast-wrap" id="wp-toast-wrap"></div>
+  <div id="wp-print-area" style="display:none;"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================================
+   WORKOUT PLANNER — single-file offline app
+   Storage: IndexedDB primary, localStorage fallback
+   ========================================================================= */
+
+var DB_NAME = "workoutPlannerDB";
+var DB_VERSION = 1;
+var STORES = ["programs","exercises","history","measurements","goals","templates","settings","achievements","notes"];
+var LS_PREFIX = "wp_ls_";
+var useIDB = true;
+var idb = null;
+
+function openDB(){
+  return new Promise(function(resolve){
+    if (!("indexedDB" in window)) { useIDB = false; resolve(null); return; }
+    try{
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = function(e){
+        var db = e.target.result;
+        STORES.forEach(function(s){
+          if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, {keyPath:"id"});
+        });
+      };
+      req.onsuccess = function(e){ idb = e.target.result; resolve(idb); };
+      req.onerror = function(){ useIDB = false; resolve(null); };
+    }catch(err){ useIDB = false; resolve(null); }
+  });
+}
+
+function lsGetAll(store){
+  try{
+    var raw = localStorage.getItem(LS_PREFIX+store);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function lsSetAll(store, arr){
+  try{ localStorage.setItem(LS_PREFIX+store, JSON.stringify(arr)); }catch(e){}
+}
+
+function dbGetAll(store){
+  return new Promise(function(resolve){
+    if (!useIDB || !idb){ resolve(lsGetAll(store)); return; }
+    try{
+      var tx = idb.transaction(store, "readonly");
+      var req = tx.objectStore(store).getAll();
+      req.onsuccess = function(){ resolve(req.result || []); };
+      req.onerror = function(){ resolve(lsGetAll(store)); };
+    }catch(e){ resolve(lsGetAll(store)); }
+  });
+}
+function dbPut(store, obj){
+  return new Promise(function(resolve){
+    if (!useIDB || !idb){
+      var arr = lsGetAll(store);
+      var idx = arr.findIndex(function(x){ return x.id===obj.id; });
+      if (idx>=0) arr[idx]=obj; else arr.push(obj);
+      lsSetAll(store, arr);
+      resolve(obj);
+      return;
+    }
+    try{
+      var tx = idb.transaction(store, "readwrite");
+      tx.objectStore(store).put(obj);
+      tx.oncomplete = function(){ resolve(obj); };
+      tx.onerror = function(){ resolve(obj); };
+    }catch(e){ resolve(obj); }
+  });
+}
+function dbDelete(store, id){
+  return new Promise(function(resolve){
+    if (!useIDB || !idb){
+      var arr = lsGetAll(store).filter(function(x){ return x.id!==id; });
+      lsSetAll(store, arr);
+      resolve(true);
+      return;
+    }
+    try{
+      var tx = idb.transaction(store, "readwrite");
+      tx.objectStore(store).delete(id);
+      tx.oncomplete = function(){ resolve(true); };
+      tx.onerror = function(){ resolve(true); };
+    }catch(e){ resolve(true); }
+  });
+}
+function dbClearAll(){
+  return new Promise(function(resolve){
+    STORES.forEach(function(s){ lsSetAll(s, []); });
+    if (useIDB && idb){
+      try{
+        var tx = idb.transaction(STORES, "readwrite");
+        STORES.forEach(function(s){ tx.objectStore(s).clear(); });
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ resolve(true); };
+      }catch(e){ resolve(true); }
+    } else resolve(true);
+  });
+}
+
+/* ---------- utilities ---------- */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function todayISO(){ var d=new Date(); return d.toISOString().slice(0,10); }
+function esc(s){
+  if (s===undefined || s===null) return "";
+  return String(s).replace(/[&<>"']/g, function(c){
+    return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+  });
+}
+function num(v, def){ var n = parseFloat(v); return isNaN(n) ? (def===undefined?0:def) : n; }
+function clampInt(v, min, max){ v=Math.round(v); if(v<min)v=min; if(v>max)v=max; return v; }
+function debounce(fn, ms){ var t; return function(){ var args=arguments, ctx=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, ms); }; }
+function fmtDate(iso){ if(!iso) return ""; var d=new Date(iso+"T00:00:00"); return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}); }
+function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+function toast(msg){
+  var wrap = document.getElementById("wp-toast-wrap");
+  var el = document.createElement("div");
+  el.className = "wp-toast"; el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2600);
+}
+function unitLabel(kind){
+  var m = STATE.settings.units || "metric";
+  if (kind==="weight") return m==="metric" ? "kg":"lb";
+  if (kind==="length") return m==="metric" ? "cm":"in";
+  return "";
+}
+
+/* =========================================================================
+   EXERCISE DATABASE — generated across categories/equipment
+   ========================================================================= */
+var EXERCISE_CATEGORIES = ["Chest","Back","Shoulders","Legs","Biceps","Triceps","Core","Cardio",
+  "Stretching","Mobility","Olympic","Bodyweight","Machines","Dumbbells","Barbell","Resistance Band"];
+
+var EX_RAW = {
+  Chest: [
+    ["Barbell Bench Press","Chest","Triceps, Shoulders","Barbell","Intermediate"],
+    ["Incline Barbell Bench Press","Chest","Shoulders, Triceps","Barbell","Intermediate"],
+    ["Decline Barbell Bench Press","Chest","Triceps","Barbell","Intermediate"],
+    ["Dumbbell Bench Press","Chest","Triceps, Shoulders","Dumbbells","Beginner"],
+    ["Incline Dumbbell Press","Chest","Shoulders","Dumbbells","Beginner"],
+    ["Dumbbell Flyes","Chest","Shoulders","Dumbbells","Beginner"],
+    ["Incline Dumbbell Flyes","Chest","Shoulders","Dumbbells","Intermediate"],
+    ["Cable Crossover","Chest","Shoulders","Machines","Intermediate"],
+    ["Low-to-High Cable Fly","Chest","Shoulders","Machines","Intermediate"],
+    ["Chest Press Machine","Chest","Triceps","Machines","Beginner"],
+    ["Pec Deck Machine","Chest","Shoulders","Machines","Beginner"],
+    ["Push-Up","Chest","Triceps, Core","Bodyweight","Beginner"],
+    ["Wide Push-Up","Chest","Shoulders","Bodyweight","Beginner"],
+    ["Decline Push-Up","Chest","Shoulders","Bodyweight","Intermediate"],
+    ["Incline Push-Up","Chest","Triceps","Bodyweight","Beginner"],
+    ["Diamond Push-Up","Triceps","Chest","Bodyweight","Intermediate"],
+    ["Dips (Chest Lean)","Chest","Triceps","Bodyweight","Intermediate"],
+    ["Resistance Band Chest Press","Chest","Triceps","Resistance Band","Beginner"],
+    ["Resistance Band Fly","Chest","Shoulders","Resistance Band","Beginner"],
+    ["Svend Press","Chest","Shoulders","Dumbbells","Beginner"]
+  ],
+  Back: [
+    ["Deadlift","Back","Legs, Core","Barbell","Advanced"],
+    ["Sumo Deadlift","Back","Legs, Glutes","Barbell","Advanced"],
+    ["Romanian Deadlift","Back","Hamstrings","Barbell","Intermediate"],
+    ["Barbell Row","Back","Biceps","Barbell","Intermediate"],
+    ["Pendlay Row","Back","Biceps","Barbell","Intermediate"],
+    ["T-Bar Row","Back","Biceps","Barbell","Intermediate"],
+    ["Dumbbell Row","Back","Biceps","Dumbbells","Beginner"],
+    ["Chest Supported Dumbbell Row","Back","Biceps","Dumbbells","Beginner"],
+    ["Pull-Up","Back","Biceps","Bodyweight","Advanced"],
+    ["Chin-Up","Back","Biceps","Bodyweight","Intermediate"],
+    ["Lat Pulldown","Back","Biceps","Machines","Beginner"],
+    ["Close-Grip Lat Pulldown","Back","Biceps","Machines","Beginner"],
+    ["Seated Cable Row","Back","Biceps","Machines","Beginner"],
+    ["Single-Arm Cable Row","Back","Biceps","Machines","Beginner"],
+    ["Face Pull","Back","Shoulders","Resistance Band","Beginner"],
+    ["Straight Arm Pulldown","Back","Triceps","Machines","Intermediate"],
+    ["Inverted Row","Back","Biceps","Bodyweight","Beginner"],
+    ["Good Morning","Back","Hamstrings","Barbell","Intermediate"],
+    ["Superman Hold","Back","Core","Bodyweight","Beginner"],
+    ["Resistance Band Row","Back","Biceps","Resistance Band","Beginner"]
+  ],
+  Shoulders: [
+    ["Overhead Barbell Press","Shoulders","Triceps","Barbell","Intermediate"],
+    ["Seated Dumbbell Press","Shoulders","Triceps","Dumbbells","Beginner"],
+    ["Arnold Press","Shoulders","Triceps","Dumbbells","Intermediate"],
+    ["Lateral Raise","Shoulders","","Dumbbells","Beginner"],
+    ["Front Raise","Shoulders","","Dumbbells","Beginner"],
+    ["Rear Delt Fly","Shoulders","Back","Dumbbells","Beginner"],
+    ["Cable Lateral Raise","Shoulders","","Machines","Beginner"],
+    ["Upright Row","Shoulders","Biceps","Barbell","Intermediate"],
+    ["Machine Shoulder Press","Shoulders","Triceps","Machines","Beginner"],
+    ["Pike Push-Up","Shoulders","Triceps","Bodyweight","Intermediate"],
+    ["Handstand Push-Up","Shoulders","Triceps","Bodyweight","Advanced"],
+    ["Landmine Press","Shoulders","Triceps","Barbell","Intermediate"],
+    ["Band Pull-Apart","Shoulders","Back","Resistance Band","Beginner"],
+    ["Band Lateral Raise","Shoulders","","Resistance Band","Beginner"],
+    ["Cuban Press","Shoulders","","Dumbbells","Intermediate"]
+  ],
+  Legs: [
+    ["Barbell Back Squat","Legs","Glutes, Core","Barbell","Intermediate"],
+    ["Barbell Front Squat","Legs","Core","Barbell","Advanced"],
+    ["Goblet Squat","Legs","Glutes","Dumbbells","Beginner"],
+    ["Bulgarian Split Squat","Legs","Glutes","Dumbbells","Intermediate"],
+    ["Walking Lunge","Legs","Glutes","Dumbbells","Beginner"],
+    ["Reverse Lunge","Legs","Glutes","Bodyweight","Beginner"],
+    ["Leg Press","Legs","Glutes","Machines","Beginner"],
+    ["Hack Squat","Legs","Glutes","Machines","Intermediate"],
+    ["Leg Extension","Quadriceps","","Machines","Beginner"],
+    ["Lying Leg Curl","Hamstrings","","Machines","Beginner"],
+    ["Seated Leg Curl","Hamstrings","","Machines","Beginner"],
+    ["Hip Thrust","Glutes","Hamstrings","Barbell","Intermediate"],
+    ["Glute Bridge","Glutes","Core","Bodyweight","Beginner"],
+    ["Standing Calf Raise","Calves","","Machines","Beginner"],
+    ["Seated Calf Raise","Calves","","Machines","Beginner"],
+    ["Step-Up","Legs","Glutes","Dumbbells","Beginner"],
+    ["Box Jump","Legs","Glutes","Bodyweight","Intermediate"],
+    ["Sissy Squat","Quadriceps","","Bodyweight","Advanced"],
+    ["Wall Sit","Legs","Core","Bodyweight","Beginner"],
+    ["Nordic Hamstring Curl","Hamstrings","","Bodyweight","Advanced"],
+    ["Cossack Squat","Legs","Adductors","Bodyweight","Intermediate"],
+    ["Hip Abduction Machine","Glutes","","Machines","Beginner"],
+    ["Hip Adduction Machine","Adductors","","Machines","Beginner"],
+    ["Banded Lateral Walk","Glutes","","Resistance Band","Beginner"],
+    ["Pistol Squat","Legs","Glutes, Core","Bodyweight","Advanced"]
+  ],
+  Biceps: [
+    ["Barbell Curl","Biceps","Forearms","Barbell","Beginner"],
+    ["EZ-Bar Curl","Biceps","Forearms","Barbell","Beginner"],
+    ["Dumbbell Curl","Biceps","Forearms","Dumbbells","Beginner"],
+    ["Hammer Curl","Biceps","Forearms","Dumbbells","Beginner"],
+    ["Incline Dumbbell Curl","Biceps","","Dumbbells","Intermediate"],
+    ["Concentration Curl","Biceps","","Dumbbells","Beginner"],
+    ["Preacher Curl","Biceps","","Barbell","Intermediate"],
+    ["Cable Curl","Biceps","","Machines","Beginner"],
+    ["Spider Curl","Biceps","","Barbell","Intermediate"],
+    ["Resistance Band Curl","Biceps","","Resistance Band","Beginner"],
+    ["Reverse Curl","Forearms","Biceps","Barbell","Intermediate"],
+    ["Zottman Curl","Biceps","Forearms","Dumbbells","Intermediate"]
+  ],
+  Triceps: [
+    ["Close-Grip Bench Press","Triceps","Chest","Barbell","Intermediate"],
+    ["Skull Crusher","Triceps","","Barbell","Intermediate"],
+    ["Overhead Triceps Extension","Triceps","","Dumbbells","Beginner"],
+    ["Triceps Pushdown","Triceps","","Machines","Beginner"],
+    ["Rope Pushdown","Triceps","","Machines","Beginner"],
+    ["Dumbbell Kickback","Triceps","","Dumbbells","Beginner"],
+    ["Bench Dip","Triceps","Chest","Bodyweight","Beginner"],
+    ["Ring/Bar Dip","Triceps","Chest","Bodyweight","Advanced"],
+    ["JM Press","Triceps","Chest","Barbell","Advanced"],
+    ["Resistance Band Pushdown","Triceps","","Resistance Band","Beginner"]
+  ],
+  Core: [
+    ["Plank","Core","Shoulders","Bodyweight","Beginner"],
+    ["Side Plank","Core","Obliques","Bodyweight","Beginner"],
+    ["Crunch","Core","","Bodyweight","Beginner"],
+    ["Bicycle Crunch","Core","Obliques","Bodyweight","Beginner"],
+    ["Hanging Leg Raise","Core","Hip Flexors","Bodyweight","Advanced"],
+    ["Hanging Knee Raise","Core","Hip Flexors","Bodyweight","Intermediate"],
+    ["Cable Woodchopper","Core","Obliques","Machines","Intermediate"],
+    ["Russian Twist","Core","Obliques","Bodyweight","Beginner"],
+    ["Ab Wheel Rollout","Core","Shoulders","Bodyweight","Advanced"],
+    ["Mountain Climber","Core","Shoulders","Bodyweight","Beginner"],
+    ["Flutter Kicks","Core","Hip Flexors","Bodyweight","Beginner"],
+    ["Dead Bug","Core","","Bodyweight","Beginner"],
+    ["V-Up","Core","Hip Flexors","Bodyweight","Intermediate"],
+    ["Cable Crunch","Core","","Machines","Intermediate"],
+    ["Pallof Press","Core","Obliques","Resistance Band","Intermediate"],
+    ["Sit-Up","Core","Hip Flexors","Bodyweight","Beginner"],
+    ["Toe Touch","Core","","Bodyweight","Beginner"],
+    ["Reverse Crunch","Core","","Bodyweight","Beginner"]
+  ],
+  Cardio: [
+    ["Running","Cardio","Legs","Cardio","Beginner"],
+    ["Sprint Intervals","Cardio","Legs","Cardio","Advanced"],
+    ["Jump Rope","Cardio","Calves","Cardio","Beginner"],
+    ["Cycling","Cardio","Legs","Cycling","Beginner"],
+    ["Stationary Bike","Cardio","Legs","Machines","Beginner"],
+    ["Rowing Machine","Cardio","Back, Legs","Machines","Intermediate"],
+    ["Stair Climber","Cardio","Legs","Machines","Beginner"],
+    ["Elliptical","Cardio","Legs","Machines","Beginner"],
+    ["Burpees","Cardio","Full Body","Bodyweight","Intermediate"],
+    ["High Knees","Cardio","Legs","Bodyweight","Beginner"],
+    ["Battle Ropes","Cardio","Shoulders","Machines","Intermediate"],
+    ["Swimming","Cardio","Full Body","Cardio","Intermediate"],
+    ["Shadow Boxing","Cardio","Shoulders","Cardio","Beginner"],
+    ["Stair Sprints","Cardio","Legs","Cardio","Advanced"],
+    ["Brisk Walking","Cardio","Legs","Cardio","Beginner"]
+  ],
+  Stretching: [
+    ["Hamstring Stretch","Hamstrings","","Stretching","Beginner"],
+    ["Quad Stretch","Quadriceps","","Stretching","Beginner"],
+    ["Calf Stretch","Calves","","Stretching","Beginner"],
+    ["Chest Stretch (Doorway)","Chest","Shoulders","Stretching","Beginner"],
+    ["Shoulder Cross-Body Stretch","Shoulders","","Stretching","Beginner"],
+    ["Triceps Overhead Stretch","Triceps","","Stretching","Beginner"],
+    ["Child's Pose","Back","Hips","Stretching","Beginner"],
+    ["Cat-Cow Stretch","Back","Core","Stretching","Beginner"],
+    ["Butterfly Stretch","Adductors","Hips","Stretching","Beginner"],
+    ["Seated Forward Fold","Hamstrings","Back","Stretching","Beginner"],
+    ["Standing Figure-4 Stretch","Glutes","Hips","Stretching","Beginner"],
+    ["Cobra Stretch","Core","Back","Stretching","Beginner"],
+    ["Hip Flexor Lunge Stretch","Hip Flexors","","Stretching","Beginner"],
+    ["Neck Stretch","Neck","","Stretching","Beginner"],
+    ["Lat Stretch (Side Reach)","Back","Shoulders","Stretching","Beginner"]
+  ],
+  Mobility: [
+    ["World's Greatest Stretch","Hips","Shoulders","Mobility","Intermediate"],
+    ["90/90 Hip Switch","Hips","","Mobility","Intermediate"],
+    ["Thoracic Rotation","Back","Shoulders","Mobility","Beginner"],
+    ["Ankle Dorsiflexion Drill","Ankles","Calves","Mobility","Beginner"],
+    ["Shoulder Dislocates (Band/Stick)","Shoulders","","Mobility","Beginner"],
+    ["Deep Squat Hold","Hips","Ankles","Mobility","Intermediate"],
+    ["Wrist Mobility Drill","Wrists","Forearms","Mobility","Beginner"],
+    ["Hip CARs","Hips","","Mobility","Intermediate"],
+    ["Scapular Push-Up","Shoulders","Chest","Mobility","Beginner"],
+    ["Cat-Cow Flow","Back","Core","Mobility","Beginner"]
+  ],
+  Olympic: [
+    ["Clean and Jerk","Full Body","Legs, Shoulders","Olympic","Advanced"],
+    ["Snatch","Full Body","Legs, Shoulders","Olympic","Advanced"],
+    ["Power Clean","Full Body","Legs, Back","Olympic","Advanced"],
+    ["Hang Clean","Full Body","Legs, Back","Olympic","Advanced"],
+    ["Push Press","Shoulders","Legs, Triceps","Olympic","Intermediate"],
+    ["Push Jerk","Shoulders","Legs","Olympic","Advanced"],
+    ["Clean Pull","Back","Legs","Olympic","Advanced"],
+    ["Snatch-Grip Deadlift","Back","Legs","Olympic","Advanced"],
+    ["Overhead Squat","Legs","Shoulders, Core","Olympic","Advanced"]
+  ],
+  Bodyweight: [
+    ["Bodyweight Squat","Legs","Glutes","Bodyweight","Beginner"],
+    ["Jumping Jack","Cardio","Full Body","Bodyweight","Beginner"],
+    ["Lunges","Legs","Glutes","Bodyweight","Beginner"],
+    ["Bear Crawl","Full Body","Core","Bodyweight","Intermediate"],
+    ["Broad Jump","Legs","Glutes","Bodyweight","Intermediate"],
+    ["Handstand Hold","Shoulders","Core","Bodyweight","Advanced"],
+    ["Muscle-Up","Back","Chest, Triceps","Bodyweight","Advanced"],
+    ["L-Sit","Core","Hip Flexors","Bodyweight","Advanced"],
+    ["Skater Jumps","Legs","Glutes","Bodyweight","Intermediate"],
+    ["Crab Walk","Triceps","Core","Bodyweight","Beginner"]
+  ],
+  Machines: [
+    ["Smith Machine Squat","Legs","Glutes","Machines","Beginner"],
+    ["Assisted Pull-Up Machine","Back","Biceps","Machines","Beginner"],
+    ["Assisted Dip Machine","Chest","Triceps","Machines","Beginner"],
+    ["Torso Rotation Machine","Core","Obliques","Machines","Beginner"],
+    ["Glute Kickback Machine","Glutes","","Machines","Beginner"],
+    ["Preacher Curl Machine","Biceps","","Machines","Beginner"],
+    ["Rear Delt Machine","Shoulders","Back","Machines","Beginner"]
+  ],
+  Dumbbells: [
+    ["Dumbbell Deadlift","Back","Legs","Dumbbells","Beginner"],
+    ["Renegade Row","Back","Core","Dumbbells","Advanced"],
+    ["Farmer's Carry","Forearms","Core","Dumbbells","Beginner"],
+    ["Dumbbell Thruster","Legs","Shoulders","Dumbbells","Intermediate"],
+    ["Dumbbell Squat","Legs","Glutes","Dumbbells","Beginner"],
+    ["Single-Arm Overhead Press","Shoulders","Core","Dumbbells","Intermediate"]
+  ],
+  Barbell: [
+    ["Barbell Hip Thrust","Glutes","Hamstrings","Barbell","Intermediate"],
+    ["Barbell Shrug","Traps","","Barbell","Beginner"],
+    ["Zercher Squat","Legs","Core","Barbell","Advanced"],
+    ["Barbell Glute Bridge","Glutes","","Barbell","Beginner"],
+    ["Barbell Lunge","Legs","Glutes","Barbell","Intermediate"]
+  ],
+  "Resistance Band": [
+    ["Band Squat","Legs","Glutes","Resistance Band","Beginner"],
+    ["Band Deadlift","Back","Legs","Resistance Band","Beginner"],
+    ["Band Bicep Curl","Biceps","","Resistance Band","Beginner"],
+    ["Band Triceps Extension","Triceps","","Resistance Band","Beginner"],
+    ["Band Good Morning","Hamstrings","Back","Resistance Band","Beginner"],
+    ["Band Hip Thrust","Glutes","","Resistance Band","Beginner"]
+  ]
+};
+
+function buildExerciseDB(){
+  var out = [];
+  Object.keys(EX_RAW).forEach(function(cat){
+    EX_RAW[cat].forEach(function(row){
+      var name=row[0], primary=row[1], secondary=row[2], equip=row[3], diff=row[4];
+      out.push({
+        id: "ex_"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_"),
+        name: name, category: cat, primaryMuscle: primary, secondaryMuscle: secondary,
+        equipment: equip, difficulty: diff,
+        instructions: genInstructions(name, cat, equip),
+        tips: genTips(cat, equip, diff),
+        favorite: false
+      });
+    });
+  });
+  return out;
+}
+function genInstructions(name, cat, equip){
+  return "Set up with proper posture and a stable base. Perform " + name.toLowerCase() +
+    " through a full, controlled range of motion, keeping the core braced. " +
+    "Lower or return under control (2-3 seconds), then drive back to the start position with steady breathing — exhale on exertion.";
+}
+function genTips(cat, equip, diff){
+  var t = "Keep tension on the target muscles throughout and avoid using momentum.";
+  if (diff==="Advanced") t += " Master the movement pattern with lighter load before adding weight.";
+  if (cat==="Cardio") t = "Warm up gradually and monitor your breathing rate; keep good posture as fatigue sets in.";
+  if (cat==="Stretching"||cat==="Mobility") t = "Ease into the stretch, never bounce, and breathe slowly. Hold 20-40 seconds.";
+  return t;
+}
+
+/* =========================================================================
+   APP STATE
+   ========================================================================= */
+var STATE = {
+  programs: [], exercises: [], history: [], measurements: [], goals: [],
+  templates: [], settings: {}, achievements: [], notes: [],
+  currentTab: "dashboard", editingProgramId: null, currentCalMonth: new Date(),
+  logExerciseRows: []
+};
+
+var DEFAULT_SETTINGS = {
+  id:"main", name:"", units:"metric", age:"", gender:"", onboarded:false,
+  firstRunDate: todayISO(), lastBackupDate: null,
+  reminders:{ workout:false, hydrate:false, stretch:false, rest:false },
+  fitnessGoal:"", workoutDaysPerWeek:3, experience:"Beginner", equipmentAvailable:[]
+};
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+async function init(){
+  await openDB();
+  var loaded = await Promise.all(STORES.map(function(s){ return dbGetAll(s); }));
+  STORES.forEach(function(s,i){ STATE[s] = loaded[i]; });
+
+  var settingsRow = STATE.settings.find ? null : null; // settings stored as array of one row from store 'settings'
+  var settingsArr = loaded[STORES.indexOf("settings")];
+  STATE.settings = (settingsArr && settingsArr[0]) ? settingsArr[0] : Object.assign({}, DEFAULT_SETTINGS);
+
+  if (!STATE.exercises || STATE.exercises.length===0){
+    STATE.exercises = buildExerciseDB();
+    for (var i=0;i<STATE.exercises.length;i++){ await dbPut("exercises", STATE.exercises[i]); }
+  }
+
+  document.getElementById("wp-today-date").textContent = new Date().toLocaleDateString(undefined,{weekday:"long", month:"long", day:"numeric", year:"numeric"});
+  document.getElementById("wp-log-date").value = todayISO();
+  document.getElementById("wp-m-date").value = todayISO();
+
+  wireTabs();
+  wireDashboard();
+  wireProgramsPanel();
+  wireExercisesPanel();
+  wireLogPanel();
+  wireMeasurementsPanel();
+  wireGoalsPanel();
+  wireCalendarPanel();
+  wireStatsPanel();
+  wireTemplatesPanel();
+  wireSettingsPanel();
+  wireSearchGlobal();
+  wireQuickStart();
+  wirePWA();
+
+  renderAll();
+
+  if (!STATE.settings.onboarded){
+    showOnboarding();
+  } else {
+    maybeShowBackupReminder();
+  }
+}
+
+function renderAll(){
+  renderDashboard();
+  renderPrograms();
+  renderExercises();
+  renderLogDaySelect();
+  renderHistory();
+  renderMeasurements();
+  renderGoals();
+  renderCalendar();
+  renderStats();
+  renderTemplates();
+  renderSettings();
+}
+
+/* =========================================================================
+   TABS
+   ========================================================================= */
+function wireTabs(){
+  document.getElementById("wp-tabs").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-tab]");
+    if (!btn) return;
+    goTab(btn.getAttribute("data-tab"));
+  });
+  document.getElementById("wp-root").addEventListener("click", function(e){
+    var link = e.target.closest("[data-tab-link]");
+    if (link) goTab(link.getAttribute("data-tab-link"));
+  });
+}
+function goTab(tab){
+  STATE.currentTab = tab;
+  document.querySelectorAll("#wp-tabs button").forEach(function(b){
+    b.classList.toggle("wp-active", b.getAttribute("data-tab")===tab);
+  });
+  document.querySelectorAll("section.wp-panel").forEach(function(p){
+    p.classList.toggle("wp-active", p.getAttribute("data-panel")===tab);
+  });
+  window.scrollTo({top:0, behavior:"instant" in window ? "instant":"auto"});
+}
+
+/* =========================================================================
+   DASHBOARD
+   ========================================================================= */
+function computeStreak(){
+  var dates = Array.from(new Set(STATE.history.map(function(h){ return h.date; }))).sort();
+  if (!dates.length) return 0;
+  var streak = 0, cur = new Date(todayISO());
+  var set = new Set(dates);
+  for(;;){
+    var iso = cur.toISOString().slice(0,10);
+    if (set.has(iso)){ streak++; cur.setDate(cur.getDate()-1); }
+    else if (iso===todayISO()){ cur.setDate(cur.getDate()-1); continue; }
+    else break;
+  }
+  return streak;
+}
+function estCaloriesForSession(session){
+  var mins = session.durationMin || (session.exercises ? session.exercises.length*8 : 20);
+  var met = 5;
+  var w = latestWeight() || 70;
+  return Math.round(met * w * (mins/60));
+}
+function latestWeight(){
+  if (!STATE.measurements.length) return null;
+  var sorted = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+  return sorted[0].weight ? num(sorted[0].weight) : null;
+}
+function computeBMI(){
+  var w = latestWeight();
+  var hRow = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?1:-1; })[0];
+  var h = hRow ? num(hRow.height) : num(STATE.settings.height,0);
+  if (!w || !h) return null;
+  var hm = STATE.settings.units==="imperial" ? h*0.0254 : h/100;
+  var wkg = STATE.settings.units==="imperial" ? w*0.453592 : w;
+  if (!hm) return null;
+  return (wkg/(hm*hm)).toFixed(1);
+}
+
+function renderDashboard(){
+  var name = STATE.settings.name ? (", "+esc(STATE.settings.name)) : "";
+  document.getElementById("wp-greeting").textContent = "Welcome back" + (STATE.settings.name?(", "+STATE.settings.name):"");
+
+  var streak = computeStreak();
+  var thisWeek = historyInLastNDays(7);
+  var thisMonth = historyInLastNDays(30);
+  var totalMin = thisWeek.reduce(function(a,h){ return a+(h.durationMin||20); },0);
+  var totalCal = thisWeek.reduce(function(a,h){ return a+estCaloriesForSession(h); },0);
+  var bmi = computeBMI();
+  var w = latestWeight();
+
+  var goalDays = num(STATE.settings.workoutDaysPerWeek, 3);
+  var pct = Math.min(100, Math.round((thisWeek.length/Math.max(1,goalDays))*100));
+
+  var tiles = [
+    {label:"Workout streak", val: streak + " day"+(streak===1?"":"s")},
+    {label:"This week", val: thisWeek.length + " / " + goalDays + " sessions"},
+    {label:"Completion", val: pct + "%"},
+    {label:"Weekly calories (est.)", val: totalCal.toLocaleString()},
+    {label:"Weekly time", val: totalMin + " min"},
+    {label:"Body weight", val: w ? (w+" "+unitLabel("weight")) : "—"},
+    {label:"BMI", val: bmi || "—"},
+    {label:"Monthly sessions", val: thisMonth.length}
+  ];
+  document.getElementById("wp-dash-stats").innerHTML = tiles.map(function(t){
+    return '<div class="wp-card wp-stat"><div class="wp-num">'+esc(t.val)+'</div><div class="wp-label">'+esc(t.label)+'</div></div>';
+  }).join("");
+
+  document.getElementById("wp-week-bar").style.width = pct+"%";
+  document.getElementById("wp-week-text").textContent = thisWeek.length + " of " + goalDays + " planned sessions completed this week ("+pct+"%).";
+
+  var todayPlan = findTodaysWorkout();
+  var todayDiv = document.getElementById("wp-today-workout");
+  if (todayPlan){
+    todayDiv.innerHTML = '<p><strong>'+esc(todayPlan.day.title)+'</strong> <span class="wp-tag">'+esc(todayPlan.program.name)+'</span></p>' +
+      '<p class="wp-small wp-muted">'+ (todayPlan.day.exercises||[]).length +' exercises planned</p>' +
+      '<button class="wp-primary wp-small" data-start-day="'+todayPlan.program.id+'|'+todayPlan.day.id+'">Start this workout</button>';
+  } else {
+    todayDiv.innerHTML = '<p class="wp-muted">No workout scheduled for today. <button class="wp-ghost wp-small" data-tab-link="programs">Set up a program</button> or log a freestyle session.</p>';
+  }
+  todayDiv.querySelectorAll("[data-start-day]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var parts = b.getAttribute("data-start-day").split("|");
+      goTab("log");
+      startLogFromDay(parts[0], parts[1]);
+    });
+  });
+
+  var recent = STATE.history.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).slice(0,6);
+  document.getElementById("wp-recent-activity").innerHTML = recent.length ? recent.map(function(h){
+    return '<li><span class="wp-badge">'+fmtDate(h.date)+'</span> <span>'+(h.exercises?h.exercises.length:0)+' exercises'+(h.dayTitle?(' — '+esc(h.dayTitle)):'')+'</span></li>';
+  }).join("") : '<li class="wp-muted">No sessions logged yet.</li>';
+
+  document.getElementById("wp-continue-btn").onclick = function(){
+    if (recent[0]){ goTab("log"); prefillLogFromHistory(recent[0]); }
+    else { goTab("log"); }
+  };
+}
+function historyInLastNDays(n){
+  var cutoff = new Date(); cutoff.setDate(cutoff.getDate()-n);
+  return STATE.history.filter(function(h){ return new Date(h.date) >= cutoff; });
+}
+function findTodaysWorkout(){
+  var todayName = new Date().toLocaleDateString(undefined,{weekday:"long"});
+  for (var i=0;i<STATE.programs.length;i++){
+    var p = STATE.programs[i];
+    if (!p.active) continue;
+    for (var j=0;j<(p.days||[]).length;j++){
+      var d = p.days[j];
+      if (d.weekday === todayName) return {program:p, day:d};
+    }
+  }
+  return null;
+}
+
+/* =========================================================================
+   PROGRAMS
+   ========================================================================= */
+var PROGRAM_TYPES = ["Strength","Hypertrophy","Weight Loss","Powerlifting","Bodybuilding","CrossFit","Cardio","HIIT","Running","Cycling","Yoga","Home Workout","Calisthenics","Custom"];
+var WEEKDAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+
+function wireProgramsPanel(){
+  document.getElementById("wp-new-program").addEventListener("click", function(){
+    openProgramEditor(null);
+  });
+}
+function renderPrograms(){
+  var list = document.getElementById("wp-program-list");
+  if (!STATE.programs.length){
+    list.innerHTML = '<p class="wp-muted">No programs yet. Create your first one, or generate a starter plan from Settings &rarr; onboarding.</p>';
+    return;
+  }
+  list.innerHTML = STATE.programs.map(function(p){
+    var doneCount = (p.days||[]).filter(function(d){ return STATE.history.some(function(h){ return h.programId===p.id && h.dayId===d.id; }); }).length;
+    return '<div class="wp-card">' +
+      '<div class="wp-row" style="justify-content:space-between;">' +
+        '<div><h3 style="display:inline;">'+esc(p.name)+'</h3> <span class="wp-tag">'+esc(p.goal||"Custom")+'</span> '+(p.active?'<span class="wp-badge">Active</span>':'')+'</div>' +
+        '<div class="wp-row">' +
+          '<button class="wp-small" data-edit-prog="'+p.id+'">Edit</button>' +
+          '<button class="wp-small" data-activate-prog="'+p.id+'">'+(p.active?"Deactivate":"Set active")+'</button>' +
+          '<button class="wp-small wp-danger" data-del-prog="'+p.id+'">Delete</button>' +
+        '</div>' +
+      '</div>' +
+      '<p class="wp-small wp-muted">'+esc(p.description||"")+'</p>' +
+      '<p class="wp-small">Difficulty: '+esc(p.difficulty||"—")+' &middot; Duration: '+esc(p.weeks||"—")+' weeks &middot; '+(p.days||[]).length+' day(s)</p>' +
+    '</div>';
+  }).join("");
+  list.querySelectorAll("[data-edit-prog]").forEach(function(b){ b.addEventListener("click", function(){ openProgramEditor(b.getAttribute("data-edit-prog")); }); });
+  list.querySelectorAll("[data-activate-prog]").forEach(function(b){ b.addEventListener("click", async function(){
+    var id = b.getAttribute("data-activate-prog");
+    var p = STATE.programs.find(function(x){ return x.id===id; });
+    p.active = !p.active;
+    await dbPut("programs", p); renderPrograms(); renderDashboard(); toast(p.active?"Program activated":"Program deactivated");
+  }); });
+  list.querySelectorAll("[data-del-prog]").forEach(function(b){ b.addEventListener("click", async function(){
+    var id = b.getAttribute("data-del-prog");
+    if (!confirm("Delete this program? This cannot be undone.")) return;
+    STATE.programs = STATE.programs.filter(function(p){ return p.id!==id; });
+    await dbDelete("programs", id); renderPrograms(); renderDashboard(); toast("Program deleted");
+  }); });
+}
+
+function openProgramEditor(id){
+  var p = id ? STATE.programs.find(function(x){ return x.id===id; }) : {
+    id: uid(), name:"", description:"", goal:PROGRAM_TYPES[0], difficulty:"Beginner", weeks:4, notes:"", days:[], active:false
+  };
+  STATE.editingProgramId = p.id;
+  var isNew = !id;
+  var editor = document.getElementById("wp-program-editor");
+  function draw(){
+    editor.innerHTML =
+      '<h2>'+(isNew?"New program":"Edit program")+'</h2>' +
+      '<div class="wp-grid2">' +
+        '<div class="wp-field"><label>Name</label><input type="text" id="pe-name" value="'+esc(p.name)+'"></div>' +
+        '<div class="wp-field"><label>Goal</label><select id="pe-goal">'+PROGRAM_TYPES.map(function(t){ return '<option'+(t===p.goal?' selected':'')+'>'+t+'</option>'; }).join("")+'</select></div>' +
+        '<div class="wp-field"><label>Difficulty</label><select id="pe-diff"><option'+(p.difficulty==="Beginner"?' selected':'')+'>Beginner</option><option'+(p.difficulty==="Intermediate"?' selected':'')+'>Intermediate</option><option'+(p.difficulty==="Advanced"?' selected':'')+'>Advanced</option></select></div>' +
+        '<div class="wp-field"><label>Duration (weeks)</label><input type="number" id="pe-weeks" value="'+esc(p.weeks||4)+'"></div>' +
+      '</div>' +
+      '<div class="wp-field"><label>Description</label><textarea id="pe-desc">'+esc(p.description)+'</textarea></div>' +
+      '<div class="wp-field"><label>Notes</label><textarea id="pe-notes">'+esc(p.notes)+'</textarea></div>' +
+      '<h3 style="margin-top:16px;">Workout days</h3>' +
+      '<div id="pe-days" class="wp-col"></div>' +
+      '<button class="wp-small" id="pe-add-day">+ Add workout day</button>' +
+      '<div class="wp-row" style="margin-top:16px;">' +
+        '<button class="wp-primary" id="pe-save">Save program</button>' +
+        '<button class="wp-ghost" data-tab-link="programs">Cancel</button>' +
+      '</div>';
+    drawDays();
+    editor.querySelector("#pe-add-day").addEventListener("click", function(){
+      p.days.push({id:uid(), title:"New day", weekday:"", exercises:[], notes:""});
+      drawDays();
+    });
+    editor.querySelector("#pe-save").addEventListener("click", async function(){
+      p.name = editor.querySelector("#pe-name").value.trim() || "Untitled program";
+      var dup = STATE.programs.some(function(x){ return x.id!==p.id && x.name.toLowerCase()===p.name.toLowerCase(); });
+      if (dup){ alert("A program with this name already exists. Please choose a different name."); return; }
+      p.goal = editor.querySelector("#pe-goal").value;
+      p.difficulty = editor.querySelector("#pe-diff").value;
+      p.weeks = clampInt(num(editor.querySelector("#pe-weeks").value,4),1,104);
+      p.description = editor.querySelector("#pe-desc").value;
+      p.notes = editor.querySelector("#pe-notes").value;
+      if (!STATE.programs.find(function(x){ return x.id===p.id; })) STATE.programs.push(p);
+      await dbPut("programs", p);
+      toast("Program saved");
+      goTab("programs"); renderPrograms(); renderDashboard();
+    });
+  }
+  function drawDays(){
+    var wrap = editor.querySelector("#pe-days");
+    wrap.innerHTML = p.days.map(function(d, di){
+      return '<div class="wp-card" data-day-id="'+d.id+'">' +
+        '<div class="wp-row" style="justify-content:space-between;">' +
+          '<input type="text" style="max-width:220px;" value="'+esc(d.title)+'" data-day-title="'+d.id+'">' +
+          '<div class="wp-row">' +
+            '<select data-day-weekday="'+d.id+'"><option value="">No fixed day</option>'+WEEKDAYS.map(function(w){ return '<option'+(w===d.weekday?' selected':'')+'>'+w+'</option>'; }).join("")+'</select>' +
+            '<button class="wp-icon wp-ghost" data-apply-template="'+d.id+'" title="Apply template">📋</button>' +
+            '<button class="wp-icon wp-danger" data-del-day="'+d.id+'">✕</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wp-col" data-day-ex-list="'+d.id+'" style="margin-top:8px;"></div>' +
+        '<button class="wp-small" data-add-ex-to-day="'+d.id+'">+ Add exercise</button>' +
+      '</div>';
+    }).join("") || '<p class="wp-muted wp-small">No days yet — add one above.</p>';
+
+    p.days.forEach(function(d){ drawDayExercises(d); });
+
+    wrap.querySelectorAll("[data-day-title]").forEach(function(inp){
+      inp.addEventListener("input", function(){ getDay(inp.getAttribute("data-day-title")).title = inp.value; });
+    });
+    wrap.querySelectorAll("[data-day-weekday]").forEach(function(sel){
+      sel.addEventListener("change", function(){ getDay(sel.getAttribute("data-day-weekday")).weekday = sel.value; });
+    });
+    wrap.querySelectorAll("[data-del-day]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        p.days = p.days.filter(function(d){ return d.id!==btn.getAttribute("data-del-day"); });
+        drawDays();
+      });
+    });
+    wrap.querySelectorAll("[data-add-ex-to-day]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        openExercisePicker(function(ex){
+          var d = getDay(btn.getAttribute("data-add-ex-to-day"));
+          d.exercises.push({exId: ex.id, name: ex.name, sets:3, reps:10, weight:0, rest:60, rpe:"", tempo:"", duration:"", notes:""});
+          drawDayExercises(d);
+        });
+      });
+    });
+    wrap.querySelectorAll("[data-apply-template]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var d = getDay(btn.getAttribute("data-apply-template"));
+        openTemplatePicker(function(tpl){
+          d.exercises = tpl.exercises.map(function(e){ return Object.assign({}, e); });
+          drawDayExercises(d);
+          toast("Template applied");
+        });
+      });
+    });
+  }
+  function getDay(id){ return p.days.find(function(d){ return d.id===id; }); }
+  function drawDayExercises(d){
+    var host = editor.querySelector('[data-day-ex-list="'+d.id+'"]');
+    if (!host) return;
+    host.innerHTML = d.exercises.map(function(e, idx){
+      return '<div class="wp-exercise-card" draggable="true" data-ex-idx="'+idx+'" data-day="'+d.id+'">' +
+        '<div class="wp-row" style="justify-content:space-between;">' +
+          '<strong class="wp-small">☰ '+esc(e.name)+'</strong>' +
+          '<button class="wp-icon wp-ghost wp-small" data-rm-ex="'+d.id+'|'+idx+'">✕</button>' +
+        '</div>' +
+        '<div class="wp-grid" style="margin-top:6px;">' +
+          '<div class="wp-field"><label>Sets</label><input type="number" value="'+e.sets+'" data-f="sets" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+          '<div class="wp-field"><label>Reps</label><input type="number" value="'+e.reps+'" data-f="reps" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+          '<div class="wp-field"><label>Weight ('+unitLabel("weight")+')</label><input type="number" value="'+e.weight+'" data-f="weight" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+          '<div class="wp-field"><label>Rest (sec)</label><input type="number" value="'+e.rest+'" data-f="rest" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+          '<div class="wp-field"><label>RPE</label><input type="number" value="'+(e.rpe||"")+'" data-f="rpe" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+          '<div class="wp-field"><label>Tempo</label><input type="text" value="'+esc(e.tempo||"")+'" data-f="tempo" data-d="'+d.id+'" data-i="'+idx+'"></div>' +
+        '</div>' +
+      '</div>';
+    }).join("") || '<p class="wp-muted wp-small">No exercises in this day yet.</p>';
+
+    host.querySelectorAll("[data-rm-ex]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var parts = btn.getAttribute("data-rm-ex").split("|");
+        var day = getDay(parts[0]);
+        day.exercises.splice(parseInt(parts[1],10),1);
+        drawDayExercises(day);
+      });
+    });
+    host.querySelectorAll("[data-f]").forEach(function(inp){
+      inp.addEventListener("input", function(){
+        var day = getDay(inp.getAttribute("data-d"));
+        var i = parseInt(inp.getAttribute("data-i"),10);
+        var f = inp.getAttribute("data-f");
+        day.exercises[i][f] = (f==="tempo") ? inp.value : num(inp.value,0);
+      });
+    });
+    var cards = host.querySelectorAll(".wp-exercise-card");
+    var dragSrc = null;
+    cards.forEach(function(card){
+      card.addEventListener("dragstart", function(){ dragSrc = card; card.classList.add("wp-dragging"); });
+      card.addEventListener("dragend", function(){ card.classList.remove("wp-dragging"); });
+      card.addEventListener("dragover", function(e){ e.preventDefault(); card.classList.add("wp-drop-target"); });
+      card.addEventListener("dragleave", function(){ card.classList.remove("wp-drop-target"); });
+      card.addEventListener("drop", function(e){
+        e.preventDefault(); card.classList.remove("wp-drop-target");
+        if (!dragSrc || dragSrc===card) return;
+        var day = getDay(d.id);
+        var from = parseInt(dragSrc.getAttribute("data-ex-idx"),10);
+        var to = parseInt(card.getAttribute("data-ex-idx"),10);
+        var moved = day.exercises.splice(from,1)[0];
+        day.exercises.splice(to,0,moved);
+        drawDayExercises(day);
+      });
+    });
+  }
+  draw();
+  goTab("programEditor");
+}
+
+function openExercisePicker(cb){
+  var body = '<h2>Pick an exercise</h2>' +
+    '<input type="text" id="epicker-search" placeholder="Search exercises..." style="margin-bottom:8px;">' +
+    '<div id="epicker-list" class="wp-col" style="max-height:50vh; overflow:auto;"></div>' +
+    '<div class="wp-row" style="margin-top:12px;"><button class="wp-ghost" id="epicker-close">Close</button></div>';
+  var m = showModal(body);
+  function draw(q){
+    var q2 = (q||"").toLowerCase();
+    var results = STATE.exercises.filter(function(e){ return e.name.toLowerCase().indexOf(q2)>=0; }).slice(0,60);
+    m.querySelector("#epicker-list").innerHTML = results.map(function(e){
+      return '<div class="wp-row" style="justify-content:space-between; border-bottom:1px solid color-mix(in srgb, currentColor 12%, transparent); padding:6px 0;">' +
+        '<span class="wp-small">'+esc(e.name)+' <span class="wp-tag">'+esc(e.category)+'</span></span>' +
+        '<button class="wp-small" data-pick="'+e.id+'">Add</button></div>';
+    }).join("");
+    m.querySelectorAll("[data-pick]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var ex = STATE.exercises.find(function(x){ return x.id===b.getAttribute("data-pick"); });
+        cb(ex); closeModal();
+      });
+    });
+  }
+  draw("");
+  m.querySelector("#epicker-search").addEventListener("input", debounce(function(e){ draw(e.target.value); },150));
+  m.querySelector("#epicker-close").addEventListener("click", closeModal);
+}
+function openTemplatePicker(cb){
+  if (!STATE.templates.length){ alert("No templates saved yet. Create one from the Templates tab."); return; }
+  var body = '<h2>Apply a template</h2><div class="wp-col">' + STATE.templates.map(function(t){
+    return '<div class="wp-row" style="justify-content:space-between;"><span>'+esc(t.name)+' <span class="wp-tag">'+t.exercises.length+' ex</span></span><button class="wp-small" data-pick-tpl="'+t.id+'">Use</button></div>';
+  }).join("") + '</div><div class="wp-row" style="margin-top:12px;"><button class="wp-ghost" id="tpick-close">Close</button></div>';
+  var m = showModal(body);
+  m.querySelectorAll("[data-pick-tpl]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var t = STATE.templates.find(function(x){ return x.id===b.getAttribute("data-pick-tpl"); });
+      cb(t); closeModal();
+    });
+  });
+  m.querySelector("#tpick-close").addEventListener("click", closeModal);
+}
+
+/* =========================================================================
+   EXERCISES panel (library)
+   ========================================================================= */
+var exPage = 0, EX_PAGE_SIZE = 20;
+function wireExercisesPanel(){
+  var catSel = document.getElementById("wp-ex-filter-cat");
+  EXERCISE_CATEGORIES.forEach(function(c){ var o=document.createElement("option"); o.textContent=c; catSel.appendChild(o); });
+  var equipSet = new Set(); Object.values(EX_RAW).forEach(function(arr){ arr.forEach(function(r){ equipSet.add(r[3]); }); });
+  var equipSel = document.getElementById("wp-ex-filter-equip");
+  Array.from(equipSet).sort().forEach(function(eq){ var o=document.createElement("option"); o.textContent=eq; equipSel.appendChild(o); });
+
+  document.getElementById("wp-ex-search").addEventListener("input", debounce(function(){ exPage=0; renderExercises(); },150));
+  catSel.addEventListener("change", function(){ exPage=0; renderExercises(); });
+  equipSel.addEventListener("change", function(){ exPage=0; renderExercises(); });
+  document.getElementById("wp-ex-filter-diff").addEventListener("change", function(){ exPage=0; renderExercises(); });
+  document.getElementById("wp-ex-fav-only").addEventListener("change", function(){ exPage=0; renderExercises(); });
+}
+function filteredExercises(){
+  var q = document.getElementById("wp-ex-search").value.toLowerCase();
+  var cat = document.getElementById("wp-ex-filter-cat").value;
+  var equip = document.getElementById("wp-ex-filter-equip").value;
+  var diff = document.getElementById("wp-ex-filter-diff").value;
+  var favOnly = document.getElementById("wp-ex-fav-only").checked;
+  return STATE.exercises.filter(function(e){
+    if (q && e.name.toLowerCase().indexOf(q)<0 && (e.primaryMuscle||"").toLowerCase().indexOf(q)<0) return false;
+    if (cat && e.category!==cat) return false;
+    if (equip && e.equipment!==equip) return false;
+    if (diff && e.difficulty!==diff) return false;
+    if (favOnly && !e.favorite) return false;
+    return true;
+  });
+}
+function renderExercises(){
+  var all = filteredExercises();
+  document.getElementById("wp-ex-count").textContent = all.length + " exercise(s) found";
+  var pageItems = all.slice(exPage*EX_PAGE_SIZE, (exPage+1)*EX_PAGE_SIZE);
+  document.getElementById("wp-ex-list").innerHTML = pageItems.map(function(e){
+    return '<div class="wp-card">' +
+      '<div class="wp-row" style="justify-content:space-between;">' +
+        '<h3 style="display:inline;">'+esc(e.name)+'</h3>' +
+        '<button class="wp-favstar" data-fav="'+e.id+'" title="Toggle favorite">'+(e.favorite?"★":"☆")+'</button>' +
+      '</div>' +
+      '<div class="wp-row wp-small">' +
+        '<span class="wp-tag">'+esc(e.category)+'</span>' +
+        '<span class="wp-tag">'+esc(e.equipment)+'</span>' +
+        '<span class="wp-tag">'+esc(e.difficulty)+'</span>' +
+      '</div>' +
+      '<p class="wp-small">Primary: '+esc(e.primaryMuscle)+(e.secondaryMuscle?(" &middot; Secondary: "+esc(e.secondaryMuscle)):"")+'</p>' +
+      '<p class="wp-small wp-muted">'+esc(e.instructions)+'</p>' +
+      '<p class="wp-small"><em>Tip:</em> '+esc(e.tips)+'</p>' +
+    '</div>';
+  }).join("") || '<p class="wp-muted">No exercises match your filters.</p>';
+
+  document.querySelectorAll("[data-fav]").forEach(function(b){
+    b.addEventListener("click", async function(){
+      var ex = STATE.exercises.find(function(x){ return x.id===b.getAttribute("data-fav"); });
+      ex.favorite = !ex.favorite;
+      await dbPut("exercises", ex);
+      renderExercises();
+    });
+  });
+
+  var totalPages = Math.max(1, Math.ceil(all.length/EX_PAGE_SIZE));
+  var pager = document.getElementById("wp-ex-pager");
+  pager.innerHTML = '<button class="wp-small" id="ex-prev" '+(exPage<=0?"disabled":"")+'>&larr; Prev</button>' +
+    '<span class="wp-small wp-muted" style="margin:0 8px;">Page '+(exPage+1)+' of '+totalPages+'</span>' +
+    '<button class="wp-small" id="ex-next" '+(exPage>=totalPages-1?"disabled":"")+'>Next &rarr;</button>';
+  var prevBtn = document.getElementById("ex-prev"), nextBtn = document.getElementById("ex-next");
+  if (prevBtn) prevBtn.addEventListener("click", function(){ exPage--; renderExercises(); window.scrollTo(0,0); });
+  if (nextBtn) nextBtn.addEventListener("click", function(){ exPage++; renderExercises(); window.scrollTo(0,0); });
+}
+
+/* =========================================================================
+   LOG
+   ========================================================================= */
+function wireLogPanel(){
+  document.getElementById("wp-log-add-exercise").addEventListener("click", function(){
+    openExercisePicker(function(ex){
+      STATE.logExerciseRows.push({exId:ex.id, name:ex.name, sets:[{reps:10,weight:0,completed:true}]});
+      renderLogEntries();
+    });
+  });
+  document.getElementById("wp-log-save").addEventListener("click", saveLogSession);
+  document.getElementById("wp-history-search").addEventListener("input", debounce(renderHistory,150));
+  renderLogEntries();
+}
+function renderLogDaySelect(){
+  var sel = document.getElementById("wp-log-day");
+  sel.innerHTML = '<option value="">Freestyle (no plan)</option>';
+  STATE.programs.forEach(function(p){
+    (p.days||[]).forEach(function(d){
+      var o = document.createElement("option");
+      o.value = p.id+"|"+d.id;
+      o.textContent = p.name+" — "+d.title;
+      sel.appendChild(o);
+    });
+  });
+  sel.onchange = function(){
+    if (!sel.value) return;
+    var parts = sel.value.split("|");
+    startLogFromDay(parts[0], parts[1], true);
+  };
+}
+function startLogFromDay(progId, dayId, skipSelectSet){
+  var p = STATE.programs.find(function(x){ return x.id===progId; });
+  var d = p && p.days.find(function(x){ return x.id===dayId; });
+  if (!d) return;
+  if (!skipSelectSet) document.getElementById("wp-log-day").value = progId+"|"+dayId;
+  STATE.logExerciseRows = d.exercises.map(function(e){
+    return {exId:e.exId, name:e.name, sets: Array.from({length: e.sets||3}, function(){ return {reps:e.reps||10, weight:e.weight||0, completed:true}; })};
+  });
+  renderLogEntries();
+  toast("Loaded: "+d.title);
+}
+function prefillLogFromHistory(h){
+  STATE.logExerciseRows = (h.exercises||[]).map(function(e){ return {exId:e.exId, name:e.name, sets: e.sets.map(function(s){ return Object.assign({},s); })}; });
+  renderLogEntries();
+}
+function renderLogEntries(){
+  var host = document.getElementById("wp-log-entries");
+  host.innerHTML = STATE.logExerciseRows.map(function(row, ridx){
+    return '<div class="wp-card">' +
+      '<div class="wp-row" style="justify-content:space-between;"><strong class="wp-small">'+esc(row.name)+'</strong>' +
+      '<button class="wp-icon wp-ghost" data-rm-row="'+ridx+'">✕</button></div>' +
+      '<table class="wp-table"><thead><tr><th>Set</th><th>Reps</th><th>Weight</th><th>Done</th></tr></thead><tbody>' +
+      row.sets.map(function(s, sidx){
+        return '<tr><td>'+(sidx+1)+'</td>' +
+          '<td><input type="number" value="'+s.reps+'" data-log-f="reps" data-r="'+ridx+'" data-s="'+sidx+'" style="width:70px;"></td>' +
+          '<td><input type="number" value="'+s.weight+'" data-log-f="weight" data-r="'+ridx+'" data-s="'+sidx+'" style="width:80px;"></td>' +
+          '<td><input type="checkbox" '+(s.completed?"checked":"")+' data-log-f="completed" data-r="'+ridx+'" data-s="'+sidx+'" style="width:auto;"></td></tr>';
+      }).join("") + '</tbody></table>' +
+      '<button class="wp-small" data-add-set="'+ridx+'">+ Add set</button>' +
+    '</div>';
+  }).join("") || '<p class="wp-muted wp-small">No exercises added to this session yet.</p>';
+
+  host.querySelectorAll("[data-rm-row]").forEach(function(b){ b.addEventListener("click", function(){ STATE.logExerciseRows.splice(parseInt(b.getAttribute("data-rm-row"),10),1); renderLogEntries(); }); });
+  host.querySelectorAll("[data-add-set]").forEach(function(b){ b.addEventListener("click", function(){
+    var row = STATE.logExerciseRows[parseInt(b.getAttribute("data-add-set"),10)];
+    var last = row.sets[row.sets.length-1] || {reps:10,weight:0,completed:true};
+    row.sets.push(Object.assign({}, last));
+    renderLogEntries();
+  }); });
+  host.querySelectorAll("[data-log-f]").forEach(function(inp){
+    inp.addEventListener("input", function(){
+      var r = parseInt(inp.getAttribute("data-r"),10), s = parseInt(inp.getAttribute("data-s"),10), f = inp.getAttribute("data-log-f");
+      var set = STATE.logExerciseRows[r].sets[s];
+      if (f==="completed") set.completed = inp.checked; else set[f] = num(inp.value,0);
+    });
+  });
+}
+async function saveLogSession(){
+  if (!STATE.logExerciseRows.length){ alert("Add at least one exercise before saving."); return; }
+  var dayVal = document.getElementById("wp-log-day").value;
+  var progId = null, dayId = null, dayTitle = null;
+  if (dayVal){ var parts=dayVal.split("|"); progId=parts[0]; dayId=parts[1];
+    var p = STATE.programs.find(function(x){return x.id===progId;});
+    var d = p && p.days.find(function(x){return x.id===dayId;});
+    dayTitle = d ? d.title : null;
+  }
+  var session = {
+    id: uid(), date: document.getElementById("wp-log-date").value || todayISO(),
+    programId: progId, dayId: dayId, dayTitle: dayTitle,
+    exercises: STATE.logExerciseRows.map(function(r){ return {exId:r.exId, name:r.name, sets:r.sets}; }),
+    notes: document.getElementById("wp-log-notes").value,
+    energy: num(document.getElementById("wp-log-energy").value, null),
+    pain: num(document.getElementById("wp-log-pain").value, null),
+    durationMin: STATE.logExerciseRows.length * 8
+  };
+  STATE.history.push(session);
+  await dbPut("history", session);
+  checkPRs(session);
+  STATE.logExerciseRows = [];
+  document.getElementById("wp-log-notes").value = "";
+  renderLogEntries();
+  renderHistory(); renderDashboard(); renderCalendar(); renderStats();
+  document.getElementById("wp-log-summary").textContent = "Saved "+fmtDate(session.date)+" — "+session.exercises.length+" exercises.";
+  toast("Session saved");
+}
+function checkPRs(session){
+  session.exercises.forEach(function(e){
+    var maxW = Math.max.apply(null, e.sets.map(function(s){ return s.weight||0; }).concat([0]));
+    var key = "pr_"+e.exId;
+    var prior = STATE.achievements.find(function(a){ return a.key===key; });
+    if (!prior || maxW > prior.value){
+      var ach = {id: prior?prior.id:uid(), key:key, name:e.name, value:maxW, date:session.date};
+      STATE.achievements = STATE.achievements.filter(function(a){ return a.key!==key; });
+      STATE.achievements.push(ach);
+      dbPut("achievements", ach);
+    }
+  });
+}
+function renderHistory(){
+  var q = (document.getElementById("wp-history-search").value||"").toLowerCase();
+  var list = STATE.history.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).filter(function(h){
+    if (!q) return true;
+    var hay = (h.notes||"") + " " + (h.dayTitle||"") + " " + h.exercises.map(function(e){return e.name;}).join(" ");
+    return hay.toLowerCase().indexOf(q)>=0;
+  });
+  document.getElementById("wp-history-list").innerHTML = list.map(function(h){
+    var vol = h.exercises.reduce(function(a,e){ return a + e.sets.reduce(function(s2,s){ return s2+(s.reps*s.weight); },0); },0);
+    return '<div class="wp-card">' +
+      '<div class="wp-row" style="justify-content:space-between;">' +
+        '<strong>'+fmtDate(h.date)+(h.dayTitle?(" — "+esc(h.dayTitle)):"")+'</strong>' +
+        '<button class="wp-icon wp-danger" data-del-hist="'+h.id+'">✕</button>' +
+      '</div>' +
+      '<p class="wp-small wp-muted">'+h.exercises.length+' exercises &middot; Volume: '+vol.toLocaleString()+' '+unitLabel("weight")+(h.energy?(" &middot; Energy "+h.energy+"/10"):"")+(h.pain?(" &middot; Pain "+h.pain+"/10"):"")+'</p>' +
+      (h.notes?('<p class="wp-small">"'+esc(h.notes)+'"</p>'):"") +
+    '</div>';
+  }).join("") || '<p class="wp-muted">No sessions match.</p>';
+  document.querySelectorAll("[data-del-hist]").forEach(function(b){
+    b.addEventListener("click", async function(){
+      if (!confirm("Delete this logged session?")) return;
+      var id = b.getAttribute("data-del-hist");
+      STATE.history = STATE.history.filter(function(h){ return h.id!==id; });
+      await dbDelete("history", id);
+      renderHistory(); renderDashboard(); renderCalendar(); renderStats();
+    });
+  });
+}
+
+/* =========================================================================
+   MEASUREMENTS
+   ========================================================================= */
+function wireMeasurementsPanel(){
+  document.getElementById("wp-m-save").addEventListener("click", saveMeasurement);
+  ["wp-m-weight","wp-m-height"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", updateBmiPreview);
+  });
+}
+function updateBmiPreview(){
+  var w = num(document.getElementById("wp-m-weight").value, 0);
+  var h = num(document.getElementById("wp-m-height").value, 0);
+  if (!w || !h){ document.getElementById("wp-m-bmi-out").textContent=""; return; }
+  var hm = STATE.settings.units==="imperial" ? h*0.0254 : h/100;
+  var wkg = STATE.settings.units==="imperial" ? w*0.453592 : w;
+  document.getElementById("wp-m-bmi-out").textContent = "BMI: " + (wkg/(hm*hm)).toFixed(1);
+}
+async function saveMeasurement(){
+  var w = num(document.getElementById("wp-m-weight").value, null);
+  if (w===null){ alert("Please enter at least a weight."); return; }
+  var m = {
+    id: uid(), date: document.getElementById("wp-m-date").value || todayISO(),
+    weight:w, height:num(document.getElementById("wp-m-height").value,null),
+    bodyfat:num(document.getElementById("wp-m-bodyfat").value,null),
+    neck:num(document.getElementById("wp-m-neck").value,null), chest:num(document.getElementById("wp-m-chest").value,null),
+    waist:num(document.getElementById("wp-m-waist").value,null), hips:num(document.getElementById("wp-m-hips").value,null),
+    thigh:num(document.getElementById("wp-m-thigh").value,null), calves:num(document.getElementById("wp-m-calves").value,null),
+    arms:num(document.getElementById("wp-m-arms").value,null), forearms:num(document.getElementById("wp-m-forearms").value,null),
+    shoulders:num(document.getElementById("wp-m-shoulders").value,null),
+    photoNote: document.getElementById("wp-m-photo").value
+  };
+  STATE.measurements.push(m);
+  await dbPut("measurements", m);
+  toast("Measurement saved");
+  renderMeasurements(); renderDashboard(); renderStats();
+}
+function renderMeasurements(){
+  var sorted = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+  document.getElementById("wp-m-history").innerHTML = sorted.slice(0,15).map(function(m){
+    return '<div class="wp-card"><div class="wp-row" style="justify-content:space-between;"><strong>'+fmtDate(m.date)+'</strong>' +
+      '<button class="wp-icon wp-danger" data-del-m="'+m.id+'">✕</button></div>' +
+      '<p class="wp-small">Weight: '+m.weight+' '+unitLabel("weight")+(m.waist?(" &middot; Waist: "+m.waist+" "+unitLabel("length")):"")+(m.bodyfat?(" &middot; BF: "+m.bodyfat+"%"):"")+'</p></div>';
+  }).join("") || '<p class="wp-muted">No measurements logged yet.</p>';
+  document.querySelectorAll("[data-del-m]").forEach(function(b){
+    b.addEventListener("click", async function(){
+      var id = b.getAttribute("data-del-m");
+      STATE.measurements = STATE.measurements.filter(function(m){ return m.id!==id; });
+      await dbDelete("measurements", id);
+      renderMeasurements(); renderStats();
+    });
+  });
+  drawMeasureChart(sorted);
+}
+
+/* =========================================================================
+   GOALS
+   ========================================================================= */
+var GOAL_TYPES = ["Lose Weight","Gain Muscle","Increase Bench","Run Distance","Workout Frequency","Custom"];
+function wireGoalsPanel(){
+  document.getElementById("wp-new-goal").addEventListener("click", function(){
+    var body = '<h2>New goal</h2>' +
+      '<div class="wp-field"><label>Type</label><select id="g-type">'+GOAL_TYPES.map(function(t){return '<option>'+t+'</option>';}).join("")+'</select></div>' +
+      '<div class="wp-field"><label>Title</label><input type="text" id="g-title" placeholder="e.g. Bench 100kg"></div>' +
+      '<div class="wp-grid2"><div class="wp-field"><label>Start value</label><input type="number" id="g-start" value="0"></div>' +
+      '<div class="wp-field"><label>Target value</label><input type="number" id="g-target" value="0"></div></div>' +
+      '<div class="wp-field"><label>Target date</label><input type="date" id="g-date"></div>' +
+      '<div class="wp-row" style="margin-top:10px;"><button class="wp-primary" id="g-save">Save goal</button><button class="wp-ghost" id="g-cancel">Cancel</button></div>';
+    var m = showModal(body);
+    m.querySelector("#g-cancel").addEventListener("click", closeModal);
+    m.querySelector("#g-save").addEventListener("click", async function(){
+      var title = m.querySelector("#g-title").value.trim();
+      if (!title){ alert("Please give the goal a title."); return; }
+      var goal = { id:uid(), type:m.querySelector("#g-type").value, title:title,
+        start:num(m.querySelector("#g-start").value,0), target:num(m.querySelector("#g-target").value,0),
+        current:num(m.querySelector("#g-start").value,0), date:m.querySelector("#g-date").value, createdAt: todayISO() };
+      STATE.goals.push(goal); await dbPut("goals", goal);
+      closeModal(); renderGoals(); toast("Goal added");
+    });
+  });
+}
+function renderGoals(){
+  var list = document.getElementById("wp-goal-list");
+  if (!STATE.goals.length){ list.innerHTML = '<p class="wp-muted">No goals yet.</p>'; return; }
+  list.innerHTML = STATE.goals.map(function(g){
+    var span = (g.target-g.start) || 1;
+    var pct = clampInt(((g.current-g.start)/span)*100, 0, 100);
+    return '<div class="wp-card">' +
+      '<div class="wp-row" style="justify-content:space-between;"><strong>'+esc(g.title)+'</strong><span class="wp-tag">'+esc(g.type)+'</span></div>' +
+      '<div class="wp-progressbar" style="margin:6px 0;"><div style="width:'+pct+'%"></div></div>' +
+      '<div class="wp-row" style="justify-content:space-between;">' +
+        '<span class="wp-small wp-muted">'+g.current+' / '+g.target+' ('+pct+'%)'+(g.date?(" &middot; by "+fmtDate(g.date)):"")+'</span>' +
+        '<div class="wp-row">' +
+          '<input type="number" style="width:80px;" value="'+g.current+'" data-goal-cur="'+g.id+'">' +
+          '<button class="wp-icon wp-danger" data-del-goal="'+g.id+'">✕</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join("");
+  list.querySelectorAll("[data-goal-cur]").forEach(function(inp){
+    inp.addEventListener("change", async function(){
+      var g = STATE.goals.find(function(x){ return x.id===inp.getAttribute("data-goal-cur"); });
+      g.current = num(inp.value,g.current);
+      await dbPut("goals", g); renderGoals();
+    });
+  });
+  list.querySelectorAll("[data-del-goal]").forEach(function(b){
+    b.addEventListener("click", async function(){
+      var id = b.getAttribute("data-del-goal");
+      STATE.goals = STATE.goals.filter(function(g){ return g.id!==id; });
+      await dbDelete("goals", id); renderGoals();
+    });
+  });
+}
+
+/* =========================================================================
+   CALENDAR
+   ========================================================================= */
+function wireCalendarPanel(){
+  document.getElementById("wp-cal-prev").addEventListener("click", function(){ STATE.currentCalMonth.setMonth(STATE.currentCalMonth.getMonth()-1); renderCalendar(); });
+  document.getElementById("wp-cal-next").addEventListener("click", function(){ STATE.currentCalMonth.setMonth(STATE.currentCalMonth.getMonth()+1); renderCalendar(); });
+}
+function renderCalendar(){
+  var m = STATE.currentCalMonth;
+  document.getElementById("wp-cal-title").textContent = m.toLocaleDateString(undefined,{month:"long", year:"numeric"});
+  var year = m.getFullYear(), month = m.getMonth();
+  var first = new Date(year, month, 1);
+  var startOffset = (first.getDay()+6)%7; // Monday=0
+  var daysInMonth = new Date(year, month+1, 0).getDate();
+  var histByDate = {};
+  STATE.history.forEach(function(h){ (histByDate[h.date] = histByDate[h.date]||[]).push(h); });
+
+  var cells = [];
+  for (var i=0;i<startOffset;i++) cells.push('<div class="wp-cal-cell wp-empty"></div>');
+  for (var d=1; d<=daysInMonth; d++){
+    var iso = year+"-"+String(month+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    var isToday = iso===todayISO();
+    var has = histByDate[iso];
+    var isPast = iso < todayISO();
+    var marker = has ? '<span class="wp-cal-dot"></span>' : (isPast ? '<span class="wp-small">·</span>' : '');
+    cells.push('<div class="wp-cal-cell'+(isToday?" wp-today":"")+'" data-cal-day="'+iso+'"><span>'+d+'</span>'+marker+'</div>');
+  }
+  document.getElementById("wp-cal-grid").innerHTML = cells.join("");
+  document.querySelectorAll("[data-cal-day]").forEach(function(cell){
+    cell.addEventListener("click", function(){
+      var iso = cell.getAttribute("data-cal-day");
+      var sessions = histByDate[iso] || [];
+      var box = document.getElementById("wp-cal-day-detail");
+      box.classList.remove("wp-hidden");
+      box.innerHTML = '<h3>'+fmtDate(iso)+'</h3>' + (sessions.length ? sessions.map(function(h){
+        return '<p class="wp-small">'+ (h.dayTitle||"Freestyle session") +' — '+h.exercises.length+' exercises</p>';
+      }).join("") : '<p class="wp-small wp-muted">No session logged this day.</p>');
+    });
+  });
+}
+
+/* =========================================================================
+   STATS
+   ========================================================================= */
+var CHART_LOADED = false, chartLoadPromise = null;
+function ensureChartJs(){
+  if (window.Chart) return Promise.resolve();
+  if (chartLoadPromise) return chartLoadPromise;
+  chartLoadPromise = new Promise(function(resolve){
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ resolve(); };
+    document.head.appendChild(s);
+  });
+  return chartLoadPromise;
+}
+var charts = {};
+function upsertChart(canvasId, config){
+  if (!window.Chart) return;
+  var el = document.getElementById(canvasId);
+  if (!el) return;
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(el.getContext("2d"), config);
+}
+function renderStats(){
+  ensureChartJs().then(function(){
+    var totalVol = STATE.history.reduce(function(a,h){ return a + h.exercises.reduce(function(s,e){ return s+e.sets.reduce(function(s2,st){ return s2+(st.reps*st.weight); },0); },0); },0);
+    var totalSessions = STATE.history.length;
+    var streak = computeStreak();
+    var tiles = [
+      {label:"Total sessions", val: totalSessions},
+      {label:"Total volume", val: totalVol.toLocaleString()+" "+unitLabel("weight")},
+      {label:"Current streak", val: streak+" days"},
+      {label:"Achievements / PRs", val: STATE.achievements.length}
+    ];
+    document.getElementById("wp-stats-tiles").innerHTML = tiles.map(function(t){
+      return '<div class="wp-card wp-stat"><div class="wp-num">'+t.val+'</div><div class="wp-label">'+t.label+'</div></div>';
+    }).join("");
+
+    var weeks = [], weekLabels = [];
+    for (var w=11; w>=0; w--){
+      var start = new Date(); start.setDate(start.getDate()-w*7-6);
+      var end = new Date(); end.setDate(end.getDate()-w*7);
+      var vol = 0, count=0;
+      STATE.history.forEach(function(h){
+        var hd = new Date(h.date);
+        if (hd>=start && hd<=end){ count++; vol += h.exercises.reduce(function(s,e){ return s+e.sets.reduce(function(s2,st){return s2+(st.reps*st.weight);},0); },0); }
+      });
+      weeks.push(vol); weekLabels.push("W-"+w);
+    }
+    upsertChart("wp-chart-weeklyvol", { type:"bar", data:{labels:weekLabels, datasets:[{label:"Volume", data:weeks, backgroundColor:"currentColor"}]}, options:baseChartOpts() });
+
+    var freq = [];
+    for (var w2=11; w2>=0; w2--){
+      var start2 = new Date(); start2.setDate(start2.getDate()-w2*7-6);
+      var end2 = new Date(); end2.setDate(end2.getDate()-w2*7);
+      var count2 = STATE.history.filter(function(h){ var hd=new Date(h.date); return hd>=start2 && hd<=end2; }).length;
+      freq.push(count2);
+    }
+    upsertChart("wp-chart-freq", { type:"line", data:{labels:weekLabels, datasets:[{label:"Sessions", data:freq, borderColor:"currentColor", backgroundColor:"transparent", tension:0.3}]}, options:baseChartOpts() });
+
+    var muscleCounts = {};
+    historyInLastNDays(30).forEach(function(h){
+      h.exercises.forEach(function(e){
+        var ex = STATE.exercises.find(function(x){ return x.id===e.exId; });
+        var muscle = ex ? ex.primaryMuscle : "Other";
+        muscleCounts[muscle] = (muscleCounts[muscle]||0)+1;
+      });
+    });
+    var mk = Object.keys(muscleCounts);
+    upsertChart("wp-chart-muscles", { type:"doughnut", data:{labels:mk, datasets:[{data:mk.map(function(k){return muscleCounts[k];}), backgroundColor: mk.map(function(_,i){ return "hsl("+(i*47%360)+" 60% 55%)"; })}]}, options:{responsive:true, plugins:{legend:{labels:{color:getComputedColor()}}}} });
+
+    var mSorted = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?-1:1; });
+    upsertChart("wp-chart-bw", { type:"line", data:{labels:mSorted.map(function(m){return fmtDate(m.date);}), datasets:[{label:"Weight", data:mSorted.map(function(m){return m.weight;}), borderColor:"currentColor", backgroundColor:"transparent", tension:0.3}]}, options:baseChartOpts() });
+
+    document.getElementById("wp-pr-list").innerHTML = STATE.achievements.length ? STATE.achievements.sort(function(a,b){return b.value-a.value;}).slice(0,15).map(function(a){
+      return '<p class="wp-small">'+esc(a.name)+': <strong>'+a.value+' '+unitLabel("weight")+'</strong> ('+fmtDate(a.date)+')</p>';
+    }).join("") : '<p class="wp-muted wp-small">Log sessions with weights to start tracking PRs.</p>';
+  });
+}
+function baseChartOpts(){
+  return { responsive:true, scales:{ x:{ ticks:{color:getComputedColor()}, grid:{color:"rgba(128,128,128,0.15)"} }, y:{ ticks:{color:getComputedColor()}, grid:{color:"rgba(128,128,128,0.15)"} } }, plugins:{ legend:{ labels:{color:getComputedColor()} } } };
+}
+function getComputedColor(){
+  try{ return getComputedStyle(document.getElementById("wp-root")).color || "#888"; }catch(e){ return "#888"; }
+}
+function drawMeasureChart(sorted){
+  ensureChartJs().then(function(){
+    var asc = sorted.slice().reverse();
+    upsertChart("wp-chart-measure", { type:"line", data:{ labels: asc.map(function(m){return fmtDate(m.date);}),
+      datasets:[
+        {label:"Weight", data: asc.map(function(m){return m.weight;}), borderColor:"currentColor", backgroundColor:"transparent", tension:0.25},
+        {label:"Waist", data: asc.map(function(m){return m.waist;}), borderColor:"rgba(150,120,255,1)", backgroundColor:"transparent", tension:0.25}
+      ]}, options: baseChartOpts() });
+  });
+}
+
+/* =========================================================================
+   TEMPLATES
+   ========================================================================= */
+var STARTER_TEMPLATE_NAMES = ["Push","Pull","Legs","Upper","Lower","Full Body","PPL Day A","Bro Split Chest"];
+function wireTemplatesPanel(){
+  document.getElementById("wp-new-template").addEventListener("click", function(){
+    var body = '<h2>New template</h2>' +
+      '<div class="wp-field"><label>Name</label><input type="text" id="t-name" placeholder="e.g. Push Day"></div>' +
+      '<div id="t-ex-list" class="wp-col"></div>' +
+      '<button class="wp-small" id="t-add-ex">+ Add exercise</button>' +
+      '<div class="wp-row" style="margin-top:10px;"><button class="wp-primary" id="t-save">Save template</button><button class="wp-ghost" id="t-cancel">Cancel</button></div>';
+    var m = showModal(body);
+    var exs = [];
+    function drawList(){
+      m.querySelector("#t-ex-list").innerHTML = exs.map(function(e,i){
+        return '<div class="wp-row" style="justify-content:space-between;"><span class="wp-small">'+esc(e.name)+' — '+e.sets+'x'+e.reps+'</span><button class="wp-icon wp-ghost" data-t-rm="'+i+'">✕</button></div>';
+      }).join("") || '<p class="wp-muted wp-small">No exercises yet.</p>';
+      m.querySelectorAll("[data-t-rm]").forEach(function(b){ b.addEventListener("click", function(){ exs.splice(parseInt(b.getAttribute("data-t-rm"),10),1); drawList(); }); });
+    }
+    drawList();
+    m.querySelector("#t-add-ex").addEventListener("click", function(){
+      openExercisePicker(function(ex){ exs.push({exId:ex.id, name:ex.name, sets:3, reps:10, weight:0, rest:60}); drawList(); });
+    });
+    m.querySelector("#t-cancel").addEventListener("click", closeModal);
+    m.querySelector("#t-save").addEventListener("click", async function(){
+      var name = m.querySelector("#t-name").value.trim();
+      if (!name){ alert("Please name the template."); return; }
+      if (STATE.templates.some(function(t){ return t.name.toLowerCase()===name.toLowerCase(); })){ alert("A template with this name already exists."); return; }
+      var tpl = {id:uid(), name:name, exercises:exs};
+      STATE.templates.push(tpl); await dbPut("templates", tpl);
+      closeModal(); renderTemplates(); toast("Template saved");
+    });
+  });
+}
+function renderTemplates(){
+  var list = document.getElementById("wp-template-list");
+  if (!STATE.templates.length){ list.innerHTML = '<p class="wp-muted">No templates yet.</p>'; return; }
+  list.innerHTML = STATE.templates.map(function(t){
+    return '<div class="wp-card"><div class="wp-row" style="justify-content:space-between;"><strong>'+esc(t.name)+'</strong>' +
+      '<button class="wp-icon wp-danger" data-del-tpl="'+t.id+'">✕</button></div>' +
+      '<p class="wp-small wp-muted">'+t.exercises.map(function(e){return e.name;}).join(", ")+'</p></div>';
+  }).join("");
+  list.querySelectorAll("[data-del-tpl]").forEach(function(b){
+    b.addEventListener("click", async function(){
+      var id = b.getAttribute("data-del-tpl");
+      STATE.templates = STATE.templates.filter(function(t){ return t.id!==id; });
+      await dbDelete("templates", id); renderTemplates();
+    });
+  });
+}
+
+/* =========================================================================
+   SETTINGS
+   ========================================================================= */
+function wireSettingsPanel(){
+  document.getElementById("wp-set-save-profile").addEventListener("click", async function(){
+    STATE.settings.name = document.getElementById("wp-set-name").value;
+    STATE.settings.units = document.getElementById("wp-set-units").value;
+    STATE.settings.age = document.getElementById("wp-set-age").value;
+    STATE.settings.gender = document.getElementById("wp-set-gender").value;
+    await dbPut("settings", STATE.settings);
+    toast("Profile saved"); renderAll();
+  });
+
+  ["workout","hydrate","stretch","rest"].forEach(function(k){
+    document.getElementById("wp-rem-"+k).addEventListener("change", async function(e){
+      STATE.settings.reminders = STATE.settings.reminders || {};
+      STATE.settings.reminders[k] = e.target.checked;
+      await dbPut("settings", STATE.settings);
+      setupReminderTimers();
+    });
+  });
+  document.getElementById("wp-rem-enable").addEventListener("click", function(){
+    if (!("Notification" in window)){ toast("Notifications not supported in this browser"); return; }
+    Notification.requestPermission().then(function(perm){
+      toast(perm==="granted" ? "Notifications enabled" : "Notifications not enabled");
+    });
+  });
+
+  document.getElementById("wp-backup-export").addEventListener("click", exportBackup);
+  document.getElementById("wp-backup-import").addEventListener("click", function(){ document.getElementById("wp-backup-file").click(); });
+  document.getElementById("wp-backup-file").addEventListener("change", importBackupFile);
+  document.getElementById("wp-export-csv-history").addEventListener("click", exportHistoryCSV);
+  document.getElementById("wp-export-csv-measure").addEventListener("click", exportMeasurementsCSV);
+  document.getElementById("wp-print-progress").addEventListener("click", printProgressReport);
+  document.getElementById("wp-reset-data").addEventListener("click", async function(){
+    if (!confirm("This will permanently delete ALL workout data on this device. Continue?")) return;
+    if (!confirm("Are you absolutely sure? This cannot be undone unless you have a backup.")) return;
+    await dbClearAll();
+    location.reload();
+  });
+}
+function renderSettings(){
+  document.getElementById("wp-set-name").value = STATE.settings.name||"";
+  document.getElementById("wp-set-units").value = STATE.settings.units||"metric";
+  document.getElementById("wp-set-age").value = STATE.settings.age||"";
+  document.getElementById("wp-set-gender").value = STATE.settings.gender||"Prefer not to say";
+  var r = STATE.settings.reminders||{};
+  document.getElementById("wp-rem-workout").checked = !!r.workout;
+  document.getElementById("wp-rem-hydrate").checked = !!r.hydrate;
+  document.getElementById("wp-rem-stretch").checked = !!r.stretch;
+  document.getElementById("wp-rem-rest").checked = !!r.rest;
+  document.getElementById("wp-storage-mode").textContent = "Storage engine: " + (useIDB ? "IndexedDB" : "localStorage (fallback)");
+  var lastBackup = STATE.settings.lastBackupDate;
+  document.getElementById("wp-last-backup-note").textContent = lastBackup ? ("Last backup exported: "+fmtDate(lastBackup)) : "You have never exported a backup yet.";
+}
+
+/* Backup / export / import */
+function backupFilename(){
+  return "WorkoutPlanner_"+todayISO()+".json";
+}
+function buildBackupObject(){
+  return {
+    _meta:{ app:"WorkoutPlanner", version:DB_VERSION, exportedAt:new Date().toISOString() },
+    programs: STATE.programs, exercises: STATE.exercises, history: STATE.history,
+    measurements: STATE.measurements, goals: STATE.goals, templates: STATE.templates,
+    settings: STATE.settings, achievements: STATE.achievements, notes: STATE.notes
+  };
+}
+async function exportBackup(){
+  var data = buildBackupObject();
+  var blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = backupFilename();
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  STATE.settings.lastBackupDate = todayISO();
+  await dbPut("settings", STATE.settings);
+  renderSettings();
+  toast("Backup exported");
+}
+function importBackupFile(e){
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var data;
+    try{ data = JSON.parse(ev.target.result); }
+    catch(err){ alert("This file could not be read as a valid backup (corrupted or not JSON)."); return; }
+    if (!data || typeof data !== "object" || !("programs" in data)){ alert("This does not look like a valid Workout Planner backup file."); return; }
+    var mode = confirm("Click OK to MERGE this backup with existing data, or Cancel to OVERWRITE existing data completely.") ? "merge" : "overwrite";
+    if (!confirm((mode==="merge"?"Merge":"Overwrite")+" is about to happen. Continue?")) return;
+    applyImport(data, mode);
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+}
+async function applyImport(data, mode){
+  var keys = ["programs","exercises","history","measurements","goals","templates","achievements","notes"];
+  if (mode==="overwrite"){
+    await dbClearAll();
+    for (var k of keys){ STATE[k] = Array.isArray(data[k]) ? data[k] : []; for (var i=0;i<STATE[k].length;i++) await dbPut(k, STATE[k][i]); }
+    STATE.settings = data.settings || Object.assign({}, DEFAULT_SETTINGS);
+    await dbPut("settings", STATE.settings);
+  } else {
+    keys.forEach(function(k){
+      var incoming = Array.isArray(data[k]) ? data[k] : [];
+      incoming.forEach(function(item){
+        if (!item || !item.id) return;
+        var idx = STATE[k].findIndex(function(x){ return x.id===item.id; });
+        if (idx>=0) STATE[k][idx]=item; else STATE[k].push(item);
+        dbPut(k, item);
+      });
+    });
+  }
+  toast("Backup imported ("+mode+")");
+  renderAll();
+}
+function csvEscape(v){
+  if (v===null||v===undefined) return "";
+  var s = String(v);
+  if (/[",\n]/.test(s)) s = '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function downloadText(filename, text, mime){
+  var blob = new Blob([text], {type:mime||"text/plain"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function exportHistoryCSV(){
+  var rows = [["Date","Day","Exercise","Set","Reps","Weight","Completed"]];
+  STATE.history.forEach(function(h){
+    h.exercises.forEach(function(e){
+      e.sets.forEach(function(s, idx){
+        rows.push([h.date, h.dayTitle||"Freestyle", e.name, idx+1, s.reps, s.weight, s.completed?"Yes":"No"]);
+      });
+    });
+  });
+  downloadText("WorkoutHistory_"+todayISO()+".csv", rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\n"), "text/csv");
+  toast("History CSV exported");
+}
+function exportMeasurementsCSV(){
+  var rows = [["Date","Weight","Height","BodyFat","Neck","Chest","Waist","Hips","Thigh","Calves","Arms","Forearms","Shoulders"]];
+  STATE.measurements.forEach(function(m){
+    rows.push([m.date,m.weight,m.height,m.bodyfat,m.neck,m.chest,m.waist,m.hips,m.thigh,m.calves,m.arms,m.forearms,m.shoulders]);
+  });
+  downloadText("Measurements_"+todayISO()+".csv", rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\n"), "text/csv");
+  toast("Measurements CSV exported");
+}
+function printProgressReport(){
+  var area = document.getElementById("wp-print-area");
+  var bmi = computeBMI();
+  var html = "<h1>Progress Report — "+esc(STATE.settings.name||"")+"</h1><p>Generated "+fmtDate(todayISO())+"</p>";
+  html += "<h2>Summary</h2><p>Total sessions: "+STATE.history.length+" | Current streak: "+computeStreak()+" days | BMI: "+(bmi||"—")+"</p>";
+  html += "<h2>Recent measurements</h2><table border='1' cellpadding='4' style='border-collapse:collapse;'><tr><th>Date</th><th>Weight</th><th>Waist</th></tr>";
+  STATE.measurements.slice(-10).forEach(function(m){ html += "<tr><td>"+m.date+"</td><td>"+m.weight+"</td><td>"+(m.waist||"")+"</td></tr>"; });
+  html += "</table><h2>Recent sessions</h2>";
+  STATE.history.slice(-10).forEach(function(h){ html += "<p><strong>"+h.date+"</strong> — "+(h.dayTitle||"Freestyle")+" ("+h.exercises.length+" exercises)</p>"; });
+  area.innerHTML = html;
+  area.style.display = "block";
+  window.print();
+  setTimeout(function(){ area.style.display="none"; }, 500);
+}
+function maybeShowBackupReminder(){
+  var last = STATE.settings.lastBackupDate;
+  var firstRun = STATE.settings.firstRunDate || todayISO();
+  if (!last && daysBetween(firstRun, todayISO()) >= 30){
+    toast("It's been a while — consider exporting a backup from Settings.");
+  }
+}
+
+/* =========================================================================
+   REMINDERS (in-tab, since there is no server for push notifications)
+   ========================================================================= */
+var reminderTimers = [];
+function setupReminderTimers(){
+  reminderTimers.forEach(clearInterval); reminderTimers=[];
+  var r = STATE.settings.reminders||{};
+  function notify(title, body){
+    if ("Notification" in window && Notification.permission==="granted"){ new Notification(title, {body:body}); }
+    else toast(title+": "+body);
+  }
+  if (r.hydrate) reminderTimers.push(setInterval(function(){ notify("Hydration reminder","Time to drink some water."); }, 2*60*60*1000));
+  if (r.stretch) reminderTimers.push(setInterval(function(){ notify("Stretch reminder","Take a moment to stretch."); }, 3*60*60*1000));
+  if (r.workout) reminderTimers.push(setInterval(function(){ if(!findTodaysWorkout()) return; notify("Workout reminder","Don't forget today's planned workout."); }, 6*60*60*1000));
+  if (r.rest) reminderTimers.push(setInterval(function(){ notify("Rest reminder","Remember rest days are part of progress."); }, 24*60*60*1000));
+}
+
+/* =========================================================================
+   GLOBAL SEARCH & QUICK START
+   ========================================================================= */
+function wireSearchGlobal(){
+  document.getElementById("wp-btn-search").addEventListener("click", function(){
+    var body = '<h2>Search everything</h2><input type="text" id="gs-input" placeholder="Search exercises, programs, notes, history, templates..."><div id="gs-results" class="wp-col" style="max-height:55vh; overflow:auto; margin-top:10px;"></div><div class="wp-row" style="margin-top:10px;"><button class="wp-ghost" id="gs-close">Close</button></div>';
+    var m = showModal(body);
+    function run(q){
+      q = (q||"").toLowerCase(); if (!q){ m.querySelector("#gs-results").innerHTML=""; return; }
+      var res = [];
+      STATE.exercises.filter(function(e){ return e.name.toLowerCase().indexOf(q)>=0; }).slice(0,8).forEach(function(e){ res.push("Exercise: "+e.name); });
+      STATE.programs.filter(function(p){ return p.name.toLowerCase().indexOf(q)>=0; }).forEach(function(p){ res.push("Program: "+p.name); });
+      STATE.templates.filter(function(t){ return t.name.toLowerCase().indexOf(q)>=0; }).forEach(function(t){ res.push("Template: "+t.name); });
+      STATE.history.filter(function(h){ return (h.notes||"").toLowerCase().indexOf(q)>=0; }).slice(0,8).forEach(function(h){ res.push("History note ("+h.date+"): "+h.notes); });
+      m.querySelector("#gs-results").innerHTML = res.map(function(r){ return '<p class="wp-small">'+esc(r)+'</p>'; }).join("") || '<p class="wp-muted wp-small">No matches.</p>';
+    }
+    m.querySelector("#gs-input").addEventListener("input", debounce(function(e){ run(e.target.value); },150));
+    m.querySelector("#gs-close").addEventListener("click", closeModal);
+  });
+}
+function wireQuickStart(){
+  document.getElementById("wp-btn-quickstart").addEventListener("click", function(){
+    goTab("log");
+    if (!STATE.logExerciseRows.length){
+      openExercisePicker(function(ex){
+        STATE.logExerciseRows.push({exId:ex.id, name:ex.name, sets:[{reps:10,weight:0,completed:true}]});
+        renderLogEntries();
+      });
+    }
+  });
+}
+
+/* =========================================================================
+   MODAL helper
+   ========================================================================= */
+function showModal(innerHTML){
+  var root = document.getElementById("wp-modal-root");
+  root.innerHTML = '<div class="wp-modal-backdrop" id="wp-modal-backdrop"><div class="wp-modal" role="dialog" aria-modal="true">'+innerHTML+'</div></div>';
+  document.getElementById("wp-modal-backdrop").addEventListener("click", function(e){ if (e.target.id==="wp-modal-backdrop") closeModal(); });
+  return root.querySelector(".wp-modal");
+}
+function closeModal(){ document.getElementById("wp-modal-root").innerHTML = ""; }
+
+/* =========================================================================
+   ONBOARDING
+   ========================================================================= */
+function showOnboarding(){
+  var step = 0;
+  var data = { name:"", age:"", gender:"Prefer not to say", height:"", weight:"", goal:GOAL_TYPES[1], days:3, experience:"Beginner", equipment:[] };
+  var steps = [
+    function(){ return '<h2>Welcome 👋</h2><p class="wp-muted">Let&#39;s set up your profile in a few quick steps. Everything stays on this device.</p>' +
+      '<div class="wp-field"><label>Your name</label><input type="text" id="ob-name" value="'+esc(data.name)+'"></div>' +
+      '<div class="wp-grid2"><div class="wp-field"><label>Age</label><input type="number" id="ob-age" value="'+esc(data.age)+'"></div>' +
+      '<div class="wp-field"><label>Gender</label><select id="ob-gender"><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div></div>'; },
+    function(){ return '<h2>Body basics</h2>' +
+      '<div class="wp-grid2"><div class="wp-field"><label>Height</label><input type="number" id="ob-height"></div>' +
+      '<div class="wp-field"><label>Weight</label><input type="number" id="ob-weight"></div></div>'; },
+    function(){ return '<h2>Your goal</h2><div class="wp-field"><label>Primary fitness goal</label><select id="ob-goal">'+PROGRAM_TYPES.map(function(t){return '<option>'+t+'</option>';}).join("")+'</select></div>' +
+      '<div class="wp-field"><label>Workout days per week</label><input type="number" id="ob-days" value="3" min="1" max="7"></div>' +
+      '<div class="wp-field"><label>Experience level</label><select id="ob-exp"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></div>'; },
+    function(){ return '<h2>Equipment available</h2><div class="wp-col wp-small">' +
+      ["Bodyweight only","Dumbbells","Barbell","Machines","Resistance Band"].map(function(eq){
+        return '<label class="wp-row" style="gap:6px;"><input type="checkbox" value="'+eq+'" class="ob-equip" style="width:auto;"> '+eq+'</label>';
+      }).join("") + '</div>'; }
+  ];
+  function draw(){
+    var body = steps[step]() + '<div class="wp-row" style="justify-content:space-between; margin-top:16px;">' +
+      (step>0 ? '<button id="ob-back">Back</button>' : '<span></span>') +
+      '<button class="wp-primary" id="ob-next">'+(step===steps.length-1?"Finish & generate plan":"Next")+'</button></div>';
+    var m = showModal(body);
+    if (m.querySelector("#ob-name")) m.querySelector("#ob-name").value = data.name;
+    if (m.querySelector("#ob-back")) m.querySelector("#ob-back").addEventListener("click", function(){ collect(); step--; draw(); });
+    m.querySelector("#ob-next").addEventListener("click", function(){
+      collect();
+      if (step < steps.length-1){ step++; draw(); } else { finish(); }
+    });
+    function collect(){
+      if (m.querySelector("#ob-name")) data.name = m.querySelector("#ob-name").value;
+      if (m.querySelector("#ob-age")) data.age = m.querySelector("#ob-age").value;
+      if (m.querySelector("#ob-gender")) data.gender = m.querySelector("#ob-gender").value;
+      if (m.querySelector("#ob-height")) data.height = m.querySelector("#ob-height").value;
+      if (m.querySelector("#ob-weight")) data.weight = m.querySelector("#ob-weight").value;
+      if (m.querySelector("#ob-goal")) data.goal = m.querySelector("#ob-goal").value;
+      if (m.querySelector("#ob-days")) data.days = m.querySelector("#ob-days").value;
+      if (m.querySelector("#ob-exp")) data.experience = m.querySelector("#ob-exp").value;
+      var equipEls = m.querySelectorAll(".ob-equip:checked");
+      if (equipEls.length) data.equipment = Array.from(equipEls).map(function(x){ return x.value; });
+    }
+  }
+  async function finish(){
+    STATE.settings.name = data.name; STATE.settings.age = data.age; STATE.settings.gender = data.gender;
+    STATE.settings.height = data.height; STATE.settings.fitnessGoal = data.goal;
+    STATE.settings.workoutDaysPerWeek = clampInt(num(data.days,3),1,7);
+    STATE.settings.experience = data.experience; STATE.settings.equipmentAvailable = data.equipment;
+    STATE.settings.onboarded = true;
+    await dbPut("settings", STATE.settings);
+    if (data.weight){
+      var m0 = {id:uid(), date:todayISO(), weight:num(data.weight), height:num(data.height,null)};
+      STATE.measurements.push(m0); await dbPut("measurements", m0);
+    }
+    await generateStarterPlan(data);
+    closeModal();
+    renderAll();
+    toast("Starter plan generated — check the Programs tab!");
+  }
+  draw();
+}
+async function generateStarterPlan(data){
+  var days = clampInt(num(data.days,3),1,7);
+  var equip = data.equipment.length ? data.equipment : ["Bodyweight only"];
+  var poolCats = ["Chest","Back","Legs","Shoulders","Core","Biceps","Triceps"];
+  var dayTitles = days<=3 ? ["Full Body A","Full Body B","Full Body C"] : ["Push","Pull","Legs","Upper","Lower","Full Body","Conditioning"];
+  var p = { id:uid(), name:(data.goal||"My")+" Starter Program", description:"Auto-generated starter plan based on your onboarding answers.",
+    goal:data.goal, difficulty:data.experience, weeks:4, notes:"", active:true, days:[] };
+  for (var i=0;i<days;i++){
+    var title = dayTitles[i % dayTitles.length];
+    var cat = poolCats[i % poolCats.length];
+    var candidates = STATE.exercises.filter(function(e){ return e.category===cat && (equip.indexOf("Bodyweight only")>=0 ? e.equipment==="Bodyweight" : true); });
+    if (!candidates.length) candidates = STATE.exercises.filter(function(e){ return e.category===cat; });
+    var picks = candidates.slice(0,5);
+    p.days.push({ id:uid(), title:title, weekday:"", notes:"",
+      exercises: picks.map(function(ex){ return {exId:ex.id, name:ex.name, sets:3, reps:10, weight:0, rest:60, rpe:"", tempo:""}; }) });
+  }
+  STATE.programs.push(p);
+  await dbPut("programs", p);
+}
+
+/* =========================================================================
+   PWA (manifest + service worker, best-effort — some features require
+   the page to be served from its own origin rather than embedded)
+   ========================================================================= */
+var deferredInstallPrompt = null;
+function wirePWA(){
+  try{
+    var manifest = {
+      name:"Workout Planner", short_name:"Workouts", start_url: location.href, display:"standalone",
+      background_color:"#00000000", theme_color:"#00000000",
+      icons:[{ src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%23444'/%3E%3Ctext x='50%25' y='58%25' font-size='55' text-anchor='middle'%3E🏋️%3C/text%3E%3C/svg%3E", sizes:"192x192", type:"image/svg+xml" }]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], {type:"application/json"});
+    var link = document.createElement("link"); link.rel="manifest"; link.href=URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  }catch(e){}
+
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault(); deferredInstallPrompt = e;
+    var btn = document.getElementById("wp-install-btn"); btn.disabled=false;
+  });
+  document.getElementById("wp-install-btn").addEventListener("click", function(){
+    if (deferredInstallPrompt){ deferredInstallPrompt.prompt(); }
+    else toast("Use your browser's 'Add to Home Screen' menu to install.");
+  });
+
+  if ("serviceWorker" in navigator){
+    try{
+      var swCode = "self.addEventListener('install', function(e){ self.skipWaiting(); });" +
+        "self.addEventListener('activate', function(e){ self.clients.claim(); });" +
+        "self.addEventListener('fetch', function(e){});";
+      var swBlob = new Blob([swCode], {type:"text/javascript"});
+      var swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(function(){});
+    }catch(e){}
+  }
+}
+
+/* =========================================================================
+   GO
+   ========================================================================= */
+init();
+setupReminderTimers();
+
+})();
+</script>
+</body>
+</html>
