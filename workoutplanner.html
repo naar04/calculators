@@ -433,7 +433,8 @@
       <div class="wp-card">
         <h3>Install app</h3>
         <p class="wp-small wp-muted">Install this planner to your home screen for quick, app-like access.</p>
-        <button id="wp-install-btn" disabled>Install app</button>
+        <button id="wp-install-btn">Install app</button>
+        <p class="wp-small wp-muted" id="wp-install-help"></p>
       </div>
     </section>
 
@@ -2177,7 +2178,29 @@ async function generateStarterPlan(data){
    the page to be served from its own origin rather than embedded)
    ========================================================================= */
 var deferredInstallPrompt = null;
+function detectPlatform(){
+  var ua = navigator.userAgent || "";
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  var isAndroid = /Android/.test(ua);
+  var isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  var isChrome = /Chrome/.test(ua) && !/Edg|OPR/.test(ua);
+  var isSamsung = /SamsungBrowser/.test(ua);
+  var isFirefox = /Firefox/.test(ua);
+  return {isIOS:isIOS, isAndroid:isAndroid, isSafari:isSafari, isChrome:isChrome, isSamsung:isSamsung, isFirefox:isFirefox};
+}
+function installInstructions(){
+  var p = detectPlatform();
+  if (p.isIOS && p.isSafari) return "On iPhone/iPad Safari: tap the Share icon, then \"Add to Home Screen.\" (Other iOS browsers can't install web apps \u2014 Apple only allows this from Safari.)";
+  if (p.isIOS) return "On iOS, open this page in Safari, tap the Share icon, then \"Add to Home Screen.\"";
+  if (p.isAndroid && p.isSamsung) return "Tap the menu (\u2630) then \"Add page to\" \u2192 \"Home screen.\"";
+  if (p.isAndroid && p.isChrome) return "Tap the menu (\u22ee) in the top right, then \"Add to Home screen\" or \"Install app.\" If you don't see it, reload and revisit the page a couple of times \u2014 Chrome needs some engagement before it detects the page as installable.";
+  if (p.isAndroid) return "Open your browser menu and look for \"Add to Home screen\" or \"Install app.\"";
+  if (p.isFirefox) return "Firefox doesn't support installing web apps from a page menu on most platforms. Try Chrome or Edge, or just bookmark this page.";
+  return "Look for an install icon in your browser's address bar, or check the browser menu for \"Install app\" / \"Add to Home screen.\"";
+}
 function wirePWA(){
+  document.getElementById("wp-install-help").textContent = installInstructions();
+
   try{
     var manifest = {
       name:"Workout Planner", short_name:"Workouts", start_url: location.href, display:"standalone",
@@ -2191,13 +2214,23 @@ function wirePWA(){
 
   window.addEventListener("beforeinstallprompt", function(e){
     e.preventDefault(); deferredInstallPrompt = e;
-    var btn = document.getElementById("wp-install-btn"); btn.disabled=false;
+    document.getElementById("wp-install-help").textContent = "Ready to install \u2014 tap \"Install app\" below.";
   });
+  window.addEventListener("appinstalled", function(){ toast("App installed"); });
+
   document.getElementById("wp-install-btn").addEventListener("click", function(){
-    if (deferredInstallPrompt){ deferredInstallPrompt.prompt(); }
-    else toast("Use your browser's 'Add to Home Screen' menu to install.");
+    if (deferredInstallPrompt){
+      deferredInstallPrompt.prompt();
+      deferredInstallPrompt.userChoice.then(function(){ deferredInstallPrompt = null; });
+    } else {
+      toast("No automatic install prompt on this browser \u2014 see the instructions below the button.");
+    }
   });
 
+  // Best-effort service worker for offline caching. Several mobile browsers
+  // block registering a worker from a blob: URL for security reasons, in
+  // which case this silently no-ops — the app still works fine online, it
+  // just won't qualify for an automatic install prompt on those browsers.
   if ("serviceWorker" in navigator){
     try{
       var swCode = "self.addEventListener('install', function(e){ self.skipWaiting(); });" +
