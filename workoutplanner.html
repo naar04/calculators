@@ -135,9 +135,13 @@
     align-items:center; justify-content:center; z-index:100; padding:16px;
   }
   #wp-root .wp-modal{
-    background:inherit; color:inherit; border:1px solid currentColor; border-radius:var(--wp-radius);
+    background:Canvas; color:CanvasText; border:1px solid currentColor; border-radius:var(--wp-radius);
     max-width:560px; width:100%; max-height:88vh; overflow:auto; padding:var(--wp-gap-lg);
-    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    box-shadow:0 20px 60px rgba(0,0,0,0.45);
+  }
+  #wp-root .wp-modal *{ color:inherit; }
+  #wp-root .wp-modal input, #wp-root .wp-modal select, #wp-root .wp-modal textarea{
+    background:color-mix(in srgb, currentColor 6%, transparent);
   }
   #wp-root .wp-hidden{ display:none !important; }
 
@@ -304,19 +308,24 @@
       <h2>Body measurements</h2>
       <div class="wp-card">
         <div class="wp-field"><label>Date</label><input type="date" id="wp-m-date"></div>
+        <div class="wp-row" style="margin-bottom:4px;">
+          <div class="wp-field" style="max-width:160px;"><label>Weight unit</label><select id="wp-m-weight-unit"><option value="kg">Kilograms (kg)</option><option value="lb">Pounds (lb)</option></select></div>
+          <div class="wp-field" style="max-width:160px;"><label>Length unit</label><select id="wp-m-length-unit"><option value="cm">Centimeters (cm)</option><option value="in">Inches (in)</option></select></div>
+        </div>
+        <p class="wp-small wp-muted">Pick whichever unit is easiest for you right now — everything is converted and stored consistently behind the scenes, so past entries always stay comparable.</p>
         <div class="wp-grid">
-          <div class="wp-field"><label>Weight</label><input type="number" step="0.1" id="wp-m-weight"></div>
-          <div class="wp-field"><label>Height</label><input type="number" step="0.1" id="wp-m-height"></div>
+          <div class="wp-field"><label id="wp-m-weight-label">Weight (kg)</label><input type="number" step="0.1" id="wp-m-weight"></div>
+          <div class="wp-field"><label id="wp-m-height-label">Height (cm)</label><input type="number" step="0.1" id="wp-m-height"></div>
           <div class="wp-field"><label>Body fat %</label><input type="number" step="0.1" id="wp-m-bodyfat"></div>
-          <div class="wp-field"><label>Neck</label><input type="number" step="0.1" id="wp-m-neck"></div>
-          <div class="wp-field"><label>Chest</label><input type="number" step="0.1" id="wp-m-chest"></div>
-          <div class="wp-field"><label>Waist</label><input type="number" step="0.1" id="wp-m-waist"></div>
-          <div class="wp-field"><label>Hips</label><input type="number" step="0.1" id="wp-m-hips"></div>
-          <div class="wp-field"><label>Thigh</label><input type="number" step="0.1" id="wp-m-thigh"></div>
-          <div class="wp-field"><label>Calves</label><input type="number" step="0.1" id="wp-m-calves"></div>
-          <div class="wp-field"><label>Arms</label><input type="number" step="0.1" id="wp-m-arms"></div>
-          <div class="wp-field"><label>Forearms</label><input type="number" step="0.1" id="wp-m-forearms"></div>
-          <div class="wp-field"><label>Shoulders</label><input type="number" step="0.1" id="wp-m-shoulders"></div>
+          <div class="wp-field"><label id="wp-m-neck-label">Neck (cm)</label><input type="number" step="0.1" id="wp-m-neck"></div>
+          <div class="wp-field"><label id="wp-m-chest-label">Chest (cm)</label><input type="number" step="0.1" id="wp-m-chest"></div>
+          <div class="wp-field"><label id="wp-m-waist-label">Waist (cm)</label><input type="number" step="0.1" id="wp-m-waist"></div>
+          <div class="wp-field"><label id="wp-m-hips-label">Hips (cm)</label><input type="number" step="0.1" id="wp-m-hips"></div>
+          <div class="wp-field"><label id="wp-m-thigh-label">Thigh (cm)</label><input type="number" step="0.1" id="wp-m-thigh"></div>
+          <div class="wp-field"><label id="wp-m-calves-label">Calves (cm)</label><input type="number" step="0.1" id="wp-m-calves"></div>
+          <div class="wp-field"><label id="wp-m-arms-label">Arms (cm)</label><input type="number" step="0.1" id="wp-m-arms"></div>
+          <div class="wp-field"><label id="wp-m-forearms-label">Forearms (cm)</label><input type="number" step="0.1" id="wp-m-forearms"></div>
+          <div class="wp-field"><label id="wp-m-shoulders-label">Shoulders (cm)</label><input type="number" step="0.1" id="wp-m-shoulders"></div>
         </div>
         <div class="wp-field" style="margin-top:6px;"><label>Photo note (placeholder — text only, no images stored)</label><input type="text" id="wp-m-photo" placeholder="e.g. front pose, good lighting"></div>
         <div class="wp-row" style="margin-top:8px;">
@@ -601,6 +610,11 @@ function unitLabel(kind){
   if (kind==="length") return m==="metric" ? "cm":"in";
   return "";
 }
+function kgToLb(kg){ return kg*2.20462; }
+function lbToKg(lb){ return lb/2.20462; }
+function cmToIn(cm){ return cm/2.54; }
+function inToCm(inch){ return inch*2.54; }
+function round1(n){ return Math.round(n*10)/10; }
 
 /* =========================================================================
    EXERCISE DATABASE — generated across categories/equipment
@@ -1005,12 +1019,11 @@ function latestWeight(){
 function computeBMI(){
   var w = latestWeight();
   var hRow = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?1:-1; })[0];
-  var h = hRow ? num(hRow.height) : num(STATE.settings.height,0);
+  var h = hRow && hRow.height ? num(hRow.height) : num(STATE.settings.heightCm, 0);
   if (!w || !h) return null;
-  var hm = STATE.settings.units==="imperial" ? h*0.0254 : h/100;
-  var wkg = STATE.settings.units==="imperial" ? w*0.453592 : w;
+  var hm = h/100;
   if (!hm) return null;
-  return (wkg/(hm*hm)).toFixed(1);
+  return (w/(hm*hm)).toFixed(1);
 }
 
 function renderDashboard(){
@@ -1555,32 +1568,58 @@ function renderHistory(){
 /* =========================================================================
    MEASUREMENTS
    ========================================================================= */
+var LENGTH_FIELDS = ["height","neck","chest","waist","hips","thigh","calves","arms","forearms","shoulders"];
+function relabelMeasurementFields(){
+  var wUnit = document.getElementById("wp-m-weight-unit").value;
+  var lUnit = document.getElementById("wp-m-length-unit").value;
+  document.getElementById("wp-m-weight-label").textContent = "Weight ("+wUnit+")";
+  LENGTH_FIELDS.forEach(function(f){
+    var lbl = document.getElementById("wp-m-"+f+"-label");
+    if (lbl) lbl.textContent = lbl.textContent.replace(/\s*\([a-z]+\)$/,"") + " (" + lUnit + ")";
+  });
+}
 function wireMeasurementsPanel(){
   document.getElementById("wp-m-save").addEventListener("click", saveMeasurement);
+  document.getElementById("wp-m-weight-unit").value = STATE.settings.units==="imperial" ? "lb":"kg";
+  document.getElementById("wp-m-length-unit").value = STATE.settings.units==="imperial" ? "in":"cm";
+  relabelMeasurementFields();
+  document.getElementById("wp-m-weight-unit").addEventListener("change", function(){ relabelMeasurementFields(); updateBmiPreview(); });
+  document.getElementById("wp-m-length-unit").addEventListener("change", function(){ relabelMeasurementFields(); updateBmiPreview(); });
   ["wp-m-weight","wp-m-height"].forEach(function(id){
     document.getElementById(id).addEventListener("input", updateBmiPreview);
   });
 }
 function updateBmiPreview(){
+  var wUnit = document.getElementById("wp-m-weight-unit").value;
+  var lUnit = document.getElementById("wp-m-length-unit").value;
   var w = num(document.getElementById("wp-m-weight").value, 0);
   var h = num(document.getElementById("wp-m-height").value, 0);
   if (!w || !h){ document.getElementById("wp-m-bmi-out").textContent=""; return; }
-  var hm = STATE.settings.units==="imperial" ? h*0.0254 : h/100;
-  var wkg = STATE.settings.units==="imperial" ? w*0.453592 : w;
+  var wkg = wUnit==="lb" ? lbToKg(w) : w;
+  var hcm = lUnit==="in" ? inToCm(h) : h;
+  var hm = hcm/100;
   document.getElementById("wp-m-bmi-out").textContent = "BMI: " + (wkg/(hm*hm)).toFixed(1);
 }
 async function saveMeasurement(){
-  var w = num(document.getElementById("wp-m-weight").value, null);
-  if (w===null){ alert("Please enter at least a weight."); return; }
+  var wUnit = document.getElementById("wp-m-weight-unit").value;
+  var lUnit = document.getElementById("wp-m-length-unit").value;
+  var wRaw = num(document.getElementById("wp-m-weight").value, null);
+  if (wRaw===null){ alert("Please enter at least a weight."); return; }
+  function lengthVal(id){
+    var v = num(document.getElementById(id).value, null);
+    if (v===null) return null;
+    return round1(lUnit==="in" ? inToCm(v) : v);
+  }
   var m = {
     id: uid(), date: document.getElementById("wp-m-date").value || todayISO(),
-    weight:w, height:num(document.getElementById("wp-m-height").value,null),
+    weight: round1(wUnit==="lb" ? lbToKg(wRaw) : wRaw),
+    height: lengthVal("wp-m-height"),
     bodyfat:num(document.getElementById("wp-m-bodyfat").value,null),
-    neck:num(document.getElementById("wp-m-neck").value,null), chest:num(document.getElementById("wp-m-chest").value,null),
-    waist:num(document.getElementById("wp-m-waist").value,null), hips:num(document.getElementById("wp-m-hips").value,null),
-    thigh:num(document.getElementById("wp-m-thigh").value,null), calves:num(document.getElementById("wp-m-calves").value,null),
-    arms:num(document.getElementById("wp-m-arms").value,null), forearms:num(document.getElementById("wp-m-forearms").value,null),
-    shoulders:num(document.getElementById("wp-m-shoulders").value,null),
+    neck: lengthVal("wp-m-neck"), chest: lengthVal("wp-m-chest"),
+    waist: lengthVal("wp-m-waist"), hips: lengthVal("wp-m-hips"),
+    thigh: lengthVal("wp-m-thigh"), calves: lengthVal("wp-m-calves"),
+    arms: lengthVal("wp-m-arms"), forearms: lengthVal("wp-m-forearms"),
+    shoulders: lengthVal("wp-m-shoulders"),
     photoNote: document.getElementById("wp-m-photo").value
   };
   STATE.measurements.push(m);
@@ -1590,10 +1629,14 @@ async function saveMeasurement(){
 }
 function renderMeasurements(){
   var sorted = STATE.measurements.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+  var dispW = STATE.settings.units==="imperial" ? "lb" : "kg";
+  var dispL = STATE.settings.units==="imperial" ? "in" : "cm";
   document.getElementById("wp-m-history").innerHTML = sorted.slice(0,15).map(function(m){
+    var w = dispW==="lb" ? round1(kgToLb(m.weight)) : m.weight;
+    var waist = (m.waist!=null) ? (dispL==="in" ? round1(cmToIn(m.waist)) : m.waist) : null;
     return '<div class="wp-card"><div class="wp-row" style="justify-content:space-between;"><strong>'+fmtDate(m.date)+'</strong>' +
       '<button class="wp-icon wp-danger" data-del-m="'+m.id+'">✕</button></div>' +
-      '<p class="wp-small">Weight: '+m.weight+' '+unitLabel("weight")+(m.waist?(" &middot; Waist: "+m.waist+" "+unitLabel("length")):"")+(m.bodyfat?(" &middot; BF: "+m.bodyfat+"%"):"")+'</p></div>';
+      '<p class="wp-small">Weight: '+w+' '+dispW+(waist!=null?(" &middot; Waist: "+waist+" "+dispL):"")+(m.bodyfat?(" &middot; BF: "+m.bodyfat+"%"):"")+'</p></div>';
   }).join("") || '<p class="wp-muted">No measurements logged yet.</p>';
   document.querySelectorAll("[data-del-m]").forEach(function(b){
     b.addEventListener("click", async function(){
@@ -1796,10 +1839,12 @@ function getComputedColor(){
 function drawMeasureChart(sorted){
   ensureChartJs().then(function(){
     var asc = sorted.slice().reverse();
+    var dispW = STATE.settings.units==="imperial" ? "lb" : "kg";
+    var dispL = STATE.settings.units==="imperial" ? "in" : "cm";
     upsertChart("wp-chart-measure", { type:"line", data:{ labels: asc.map(function(m){return fmtDate(m.date);}),
       datasets:[
-        {label:"Weight", data: asc.map(function(m){return m.weight;}), borderColor:"currentColor", backgroundColor:"transparent", tension:0.25},
-        {label:"Waist", data: asc.map(function(m){return m.waist;}), borderColor:"rgba(150,120,255,1)", backgroundColor:"transparent", tension:0.25}
+        {label:"Weight ("+dispW+")", data: asc.map(function(m){ return dispW==="lb" ? round1(kgToLb(m.weight)) : m.weight; }), borderColor:"currentColor", backgroundColor:"transparent", tension:0.25},
+        {label:"Waist ("+dispL+")", data: asc.map(function(m){ return m.waist==null ? null : (dispL==="in" ? round1(cmToIn(m.waist)) : m.waist); }), borderColor:"rgba(150,120,255,1)", backgroundColor:"transparent", tension:0.25}
       ]}, options: baseChartOpts() });
   });
 }
@@ -2030,12 +2075,12 @@ function exportHistoryCSV(){
   toast("History CSV exported");
 }
 function exportMeasurementsCSV(){
-  var rows = [["Date","Weight","Height","BodyFat","Neck","Chest","Waist","Hips","Thigh","Calves","Arms","Forearms","Shoulders"]];
+  var rows = [["Date","Weight_kg","Height_cm","BodyFat_pct","Neck_cm","Chest_cm","Waist_cm","Hips_cm","Thigh_cm","Calves_cm","Arms_cm","Forearms_cm","Shoulders_cm"]];
   STATE.measurements.forEach(function(m){
     rows.push([m.date,m.weight,m.height,m.bodyfat,m.neck,m.chest,m.waist,m.hips,m.thigh,m.calves,m.arms,m.forearms,m.shoulders]);
   });
   downloadText("Measurements_"+todayISO()+".csv", rows.map(function(r){ return r.map(csvEscape).join(","); }).join("\n"), "text/csv");
-  toast("Measurements CSV exported");
+  toast("Measurements CSV exported (all values in metric: kg / cm)");
 }
 function printProgressReport(){
   var area = document.getElementById("wp-print-area");
@@ -2124,15 +2169,19 @@ function closeModal(){ document.getElementById("wp-modal-root").innerHTML = ""; 
    ========================================================================= */
 function showOnboarding(){
   var step = 0;
-  var data = { name:"", age:"", gender:"Prefer not to say", height:"", weight:"", goal:GOAL_TYPES[1], days:3, experience:"Beginner", equipment:[] };
+  var data = { name:"", age:"", gender:"Prefer not to say", height:"", weight:"", heightUnit:"cm", weightUnit:"kg", goal:GOAL_TYPES[1], days:3, experience:"Beginner", equipment:[] };
   var steps = [
     function(){ return '<h2>Welcome 👋</h2><p class="wp-muted">Let&#39;s set up your profile in a few quick steps. Everything stays on this device.</p>' +
       '<div class="wp-field"><label>Your name</label><input type="text" id="ob-name" value="'+esc(data.name)+'"></div>' +
       '<div class="wp-grid2"><div class="wp-field"><label>Age</label><input type="number" id="ob-age" value="'+esc(data.age)+'"></div>' +
       '<div class="wp-field"><label>Gender</label><select id="ob-gender"><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div></div>'; },
-    function(){ return '<h2>Body basics</h2>' +
-      '<div class="wp-grid2"><div class="wp-field"><label>Height</label><input type="number" id="ob-height"></div>' +
-      '<div class="wp-field"><label>Weight</label><input type="number" id="ob-weight"></div></div>'; },
+    function(){ return '<h2>Body basics</h2><p class="wp-muted wp-small">Enter these in whichever unit is easiest — you can switch anytime.</p>' +
+      '<div class="wp-grid2">' +
+        '<div class="wp-field"><label>Height</label><input type="number" id="ob-height"></div>' +
+        '<div class="wp-field"><label>Height unit</label><select id="ob-height-unit"><option value="cm">cm</option><option value="in">inches</option></select></div>' +
+        '<div class="wp-field"><label>Weight</label><input type="number" id="ob-weight"></div>' +
+        '<div class="wp-field"><label>Weight unit</label><select id="ob-weight-unit"><option value="kg">kg</option><option value="lb">lb</option></select></div>' +
+      '</div>'; },
     function(){ return '<h2>Your goal</h2><div class="wp-field"><label>Primary fitness goal</label><select id="ob-goal">'+PROGRAM_TYPES.map(function(t){return '<option>'+t+'</option>';}).join("")+'</select></div>' +
       '<div class="wp-field"><label>Workout days per week</label><input type="number" id="ob-days" value="3" min="1" max="7"></div>' +
       '<div class="wp-field"><label>Experience level</label><select id="ob-exp"><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></div>'; },
@@ -2158,6 +2207,8 @@ function showOnboarding(){
       if (m.querySelector("#ob-gender")) data.gender = m.querySelector("#ob-gender").value;
       if (m.querySelector("#ob-height")) data.height = m.querySelector("#ob-height").value;
       if (m.querySelector("#ob-weight")) data.weight = m.querySelector("#ob-weight").value;
+      if (m.querySelector("#ob-height-unit")) data.heightUnit = m.querySelector("#ob-height-unit").value;
+      if (m.querySelector("#ob-weight-unit")) data.weightUnit = m.querySelector("#ob-weight-unit").value;
       if (m.querySelector("#ob-goal")) data.goal = m.querySelector("#ob-goal").value;
       if (m.querySelector("#ob-days")) data.days = m.querySelector("#ob-days").value;
       if (m.querySelector("#ob-exp")) data.experience = m.querySelector("#ob-exp").value;
@@ -2166,14 +2217,16 @@ function showOnboarding(){
     }
   }
   async function finish(){
+    var heightCm = data.height ? round1(data.heightUnit==="in" ? inToCm(num(data.height)) : num(data.height)) : null;
+    var weightKg = data.weight ? round1(data.weightUnit==="lb" ? lbToKg(num(data.weight)) : num(data.weight)) : null;
     STATE.settings.name = data.name; STATE.settings.age = data.age; STATE.settings.gender = data.gender;
-    STATE.settings.height = data.height; STATE.settings.fitnessGoal = data.goal;
+    STATE.settings.heightCm = heightCm; STATE.settings.fitnessGoal = data.goal;
     STATE.settings.workoutDaysPerWeek = clampInt(num(data.days,3),1,7);
     STATE.settings.experience = data.experience; STATE.settings.equipmentAvailable = data.equipment;
     STATE.settings.onboarded = true;
     await dbPut("settings", STATE.settings);
-    if (data.weight){
-      var m0 = {id:uid(), date:todayISO(), weight:num(data.weight), height:num(data.height,null)};
+    if (weightKg){
+      var m0 = {id:uid(), date:todayISO(), weight:weightKg, height:heightCm};
       STATE.measurements.push(m0); await dbPut("measurements", m0);
     }
     await generateStarterPlan(data);
