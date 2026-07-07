@@ -915,14 +915,12 @@ async function init(){
   document.getElementById("wp-m-date").value = todayISO();
 
   wireTabs();
-  wireDashboard();
   wireProgramsPanel();
   wireExercisesPanel();
   wireLogPanel();
   wireMeasurementsPanel();
   wireGoalsPanel();
   wireCalendarPanel();
-  wireStatsPanel();
   wireTemplatesPanel();
   wireSettingsPanel();
   wireSearchGlobal();
@@ -1809,10 +1807,30 @@ function drawMeasureChart(sorted){
 /* =========================================================================
    TEMPLATES
    ========================================================================= */
-var STARTER_TEMPLATE_NAMES = ["Push","Pull","Legs","Upper","Lower","Full Body","PPL Day A","Bro Split Chest"];
+var PRESET_TEMPLATES = {
+  "Push": ["Barbell Bench Press","Overhead Barbell Press","Incline Dumbbell Press","Lateral Raise","Triceps Pushdown","Cable Crossover"],
+  "Pull": ["Deadlift","Barbell Row","Pull-Up","Lat Pulldown","Face Pull","Barbell Curl"],
+  "Legs": ["Barbell Back Squat","Romanian Deadlift","Leg Press","Leg Extension","Lying Leg Curl","Standing Calf Raise"],
+  "Upper Body": ["Barbell Bench Press","Barbell Row","Overhead Barbell Press","Lat Pulldown","Barbell Curl","Triceps Pushdown"],
+  "Lower Body": ["Barbell Back Squat","Romanian Deadlift","Leg Press","Standing Calf Raise","Hip Thrust"],
+  "Full Body": ["Barbell Back Squat","Barbell Bench Press","Barbell Row","Overhead Barbell Press","Plank"],
+  "PPL Day A (Push)": ["Barbell Bench Press","Overhead Barbell Press","Incline Dumbbell Press","Lateral Raise","Triceps Pushdown"],
+  "PPL Day B (Pull)": ["Deadlift","Barbell Row","Pull-Up","Lat Pulldown","Barbell Curl"],
+  "PPL Day C (Legs)": ["Barbell Back Squat","Romanian Deadlift","Leg Press","Lying Leg Curl","Standing Calf Raise"],
+  "Bro Split — Chest": ["Barbell Bench Press","Incline Barbell Bench Press","Incline Dumbbell Flyes","Cable Crossover","Push-Up"],
+  "Bro Split — Back": ["Deadlift","Barbell Row","Pull-Up","Seated Cable Row","Straight Arm Pulldown"],
+  "Bro Split — Shoulders": ["Overhead Barbell Press","Lateral Raise","Rear Delt Fly","Front Raise","Upright Row"],
+  "Bro Split — Arms": ["Barbell Curl","Hammer Curl","Close-Grip Bench Press","Triceps Pushdown","Skull Crusher"],
+  "Bro Split — Legs": ["Barbell Back Squat","Leg Press","Lying Leg Curl","Standing Calf Raise","Walking Lunge"]
+};
+function resolveExByName(name){
+  return STATE.exercises.find(function(e){ return e.name===name; }) || null;
+}
 function wireTemplatesPanel(){
   document.getElementById("wp-new-template").addEventListener("click", function(){
+    var presetOptions = '<option value="">Custom (start blank)</option>' + Object.keys(PRESET_TEMPLATES).map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+'</option>'; }).join("");
     var body = '<h2>New template</h2>' +
+      '<div class="wp-field"><label>Start from a common template (optional)</label><select id="t-preset">'+presetOptions+'</select></div>' +
       '<div class="wp-field"><label>Name</label><input type="text" id="t-name" placeholder="e.g. Push Day"></div>' +
       '<div id="t-ex-list" class="wp-col"></div>' +
       '<button class="wp-small" id="t-add-ex">+ Add exercise</button>' +
@@ -1826,6 +1844,17 @@ function wireTemplatesPanel(){
       m.querySelectorAll("[data-t-rm]").forEach(function(b){ b.addEventListener("click", function(){ exs.splice(parseInt(b.getAttribute("data-t-rm"),10),1); drawList(); }); });
     }
     drawList();
+    m.querySelector("#t-preset").addEventListener("change", function(){
+      var key = m.querySelector("#t-preset").value;
+      if (!key){ return; }
+      var names = PRESET_TEMPLATES[key] || [];
+      exs = names.map(function(n){
+        var ex = resolveExByName(n);
+        return ex ? {exId:ex.id, name:ex.name, sets:3, reps:10, weight:0, rest:60} : null;
+      }).filter(Boolean);
+      if (!m.querySelector("#t-name").value.trim()) m.querySelector("#t-name").value = key;
+      drawList();
+    });
     m.querySelector("#t-add-ex").addEventListener("click", function(){
       openExercisePicker(function(ex){ exs.push({exId:ex.id, name:ex.name, sets:3, reps:10, weight:0, rest:60}); drawList(); });
     });
@@ -1833,6 +1862,7 @@ function wireTemplatesPanel(){
     m.querySelector("#t-save").addEventListener("click", async function(){
       var name = m.querySelector("#t-name").value.trim();
       if (!name){ alert("Please name the template."); return; }
+      if (!exs.length){ alert("Add at least one exercise (or pick a common template) before saving."); return; }
       if (STATE.templates.some(function(t){ return t.name.toLowerCase()===name.toLowerCase(); })){ alert("A template with this name already exists."); return; }
       var tpl = {id:uid(), name:name, exercises:exs};
       STATE.templates.push(tpl); await dbPut("templates", tpl);
