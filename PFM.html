@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Unified Personal Finance Dashboard" />
+  <title>Unified Personal Finance Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: rgba(255,255,255,.86);
+      --panel-solid: #ffffff;
+      --text: #101828;
+      --muted: #667085;
+      --line: rgba(15,23,42,.1);
+      --brand: #2563eb;
+      --brand-2: #14b8a6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --good: #10b981;
+      --shadow: 0 18px 50px rgba(15, 23, 42, .08);
+    }
+    [data-theme="dark"] {
+      --bg: #0b1020;
+      --panel: rgba(17,24,39,.82);
+      --panel-solid: #111827;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --line: rgba(255,255,255,.11);
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(20,184,166,.18), transparent 32rem),
+        radial-gradient(circle at top right, rgba(37,99,235,.16), transparent 30rem),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      transition: background .25s ease, color .25s ease;
+    }
+    button, input, select, textarea { font: inherit; }
+    .glass {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+    .panel {
+      background: var(--panel-solid);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 34px rgba(15, 23, 42, .06);
+    }
+    [data-theme="dark"] .panel { box-shadow: 0 12px 34px rgba(0,0,0,.24); }
+    .muted { color: var(--muted); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      color: white;
+      box-shadow: 0 12px 28px rgba(37,99,235,.25);
+    }
+    .mobile-tab.active { color: var(--brand); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      min-height: 42px;
+      border-radius: .75rem;
+      padding: .68rem .95rem;
+      font-weight: 700;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 12px 24px rgba(37,99,235,.22);
+    }
+    .btn-soft { background: rgba(37,99,235,.1); color: var(--brand); }
+    .btn-danger { background: rgba(239,68,68,.12); color: var(--danger); }
+    .input {
+      width: 100%;
+      min-height: 42px;
+      border-radius: .75rem;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-solid) 88%, transparent);
+      color: var(--text);
+      padding: .68rem .82rem;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    .input:focus {
+      border-color: color-mix(in srgb, var(--brand) 65%, white);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
+    .progress-shell {
+      height: .72rem;
+      border-radius: 99px;
+      background: rgba(148,163,184,.22);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0%;
+      transition: width .6s cubic-bezier(.2,.8,.2,1), background .25s ease;
+    }
+    .over-budget { animation: pulseRed 1.1s infinite; }
+    @keyframes pulseRed {
+      0%, 100% { filter: saturate(1); opacity: 1; }
+      50% { filter: saturate(1.4); opacity: .62; }
+    }
+    .view { display: none; animation: fadeUp .28s ease both; }
+    .view.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .toast {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 80;
+      max-width: min(92vw, 420px);
+      transform: translateY(-12px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .fab {
+      position: fixed;
+      right: 1rem;
+      bottom: 5.5rem;
+      z-index: 45;
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+    }
+    .calendar-cell {
+      min-height: 72px;
+      border-radius: .9rem;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+      padding: .45rem;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(2,6,23,.56);
+    }
+    .modal-backdrop.show { display: flex; }
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text);
+    }
+    .theme-switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .switch-track {
+      position: relative;
+      width: 54px;
+      height: 30px;
+      border-radius: 999px;
+      background: rgba(148,163,184,.35);
+      border: 1px solid var(--line);
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 5px 12px rgba(15,23,42,.24);
+      transition: transform .22s ease;
+    }
+    .theme-switch input:checked + .switch-track {
+      background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      border-color: transparent;
+    }
+    .theme-switch input:checked + .switch-track::after {
+      transform: translateX(24px);
+    }
+    .theme-label {
+      min-width: 44px;
+      font-size: .85rem;
+      font-weight: 800;
+    }
+    @media (min-width: 1024px) {
+      .fab { display: none; }
+      .desktop-shell { padding-left: 18rem; }
+      .sidebar { display: flex; }
+      .mobile-nav { display: none; }
+    }
+    @media (max-width: 1023px) {
+      .sidebar { display: none; }
+      main { padding-bottom: 6rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- PWA hosting notes:
+    For installability on GitHub Pages/Firebase, place this index.html beside:
+    manifest.json:
+    {"name":"Unified Personal Finance Dashboard","short_name":"Finance","start_url":"./","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"}]}
+    sw.js:
+    const CACHE='finance-dashboard-v1'; const ASSETS=['./','./index.html'];
+    self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));
+    self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));
+  -->
+
+  <aside class="sidebar fixed left-0 top-0 z-50 hidden h-screen w-72 flex-col border-r p-5" style="border-color: var(--line); background: color-mix(in srgb, var(--panel-solid) 88%, transparent); backdrop-filter: blur(18px);">
+    <div class="mb-8 flex items-center gap-3">
+      <div class="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-teal-500 text-white"><i data-lucide="wallet-cards"></i></div>
+      <div>
+        <h1 class="text-lg font-black">Unified Finance</h1>
+        <p class="text-xs muted">Private local dashboard</p>
+      </div>
+    </div>
+    <nav class="space-y-2">
+      <button class="tab-btn active btn w-full justify-start" data-tab="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</button>
+      <button class="tab-btn btn w-full justify-start" data-tab="budgets"><i data-lucide="target"></i> Budgets & Goals</button>
+      <button class="tab-btn btn w-full justify-start" data-tab="bills"><i data-lucide="calendar-days"></i> Bills</button>
+      <button class="tab-btn btn w-full justify-start" data-tab="smart"><i data-lucide="sparkles"></i> Smart Utilities</button>
+    </nav>
+    <div class="mt-auto panel rounded-2xl p-4">
+      <div class="mb-3 flex items-center justify-between">
+        <span class="text-sm font-bold">Theme</span>
+        <label class="theme-switch" aria-label="Switch between light and dark mode">
+          <i data-lucide="sun" class="h-4 w-4"></i>
+          <input id="themeSwitch" class="theme-switch-input" type="checkbox" />
+          <span class="switch-track"></span>
+          <span id="themeSwitchLabel" class="theme-label">Light</span>
+        </label>
+      </div>
+      <p id="persistBadgeSide" class="text-xs muted">Checking protected storage...</p>
+    </div>
+  </aside>
+
+  <div class="desktop-shell">
+    <header class="sticky top-0 z-40 border-b px-4 py-3 lg:px-8" style="border-color: var(--line); background: color-mix(in srgb, var(--bg) 84%, transparent); backdrop-filter: blur(18px);">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider muted">Personal finance command center</p>
+          <h2 id="pageTitle" class="text-xl font-black sm:text-2xl">Dashboard</h2>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="quickAddTop" class="btn btn-primary hidden sm:inline-flex"><i data-lucide="plus"></i> Add Expense</button>
+          <label class="theme-switch rounded-xl border px-3 py-2 lg:hidden" style="border-color: var(--line);" aria-label="Switch between light and dark mode">
+            <input id="themeSwitchTop" class="theme-switch-input" type="checkbox" />
+            <span class="switch-track"></span>
+            <span id="themeSwitchTopLabel" class="theme-label">Light</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+      <section id="dashboard" class="view active">
+        <div class="grid gap-4 md:grid-cols-3">
+          <article class="panel rounded-2xl p-5">
+            <div class="flex items-start justify-between"><p class="muted text-sm">Monthly spent</p><i class="text-blue-500" data-lucide="receipt-text"></i></div>
+            <h3 id="monthlySpent" class="mt-3 text-3xl font-black">$0.00</h3>
+            <p id="monthlyHours" class="mt-1 text-sm muted">Set wage to see hours</p>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <div class="flex items-start justify-between"><p class="muted text-sm">Remaining after budgets</p><i class="text-emerald-500" data-lucide="landmark"></i></div>
+            <h3 id="remainingBudget" class="mt-3 text-3xl font-black">$0.00</h3>
+            <p id="incomeSummary" class="mt-1 text-sm muted">Add income in Budgets</p>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <div class="flex items-start justify-between"><p class="muted text-sm">Next bill</p><i class="text-amber-500" data-lucide="bell-ring"></i></div>
+            <h3 id="nextBill" class="mt-3 text-2xl font-black">No bills yet</h3>
+            <p id="nextBillMeta" class="mt-1 text-sm muted">Add one in Bills</p>
+          </article>
+        </div>
+
+        <article class="panel mt-5 rounded-2xl p-5">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 class="text-lg font-black">Monthly Budget Plan</h3>
+              <p class="text-sm muted">Income, planned category budgets, and actual spending in one place.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-soft" type="button" data-tab="budgets"><i data-lucide="wallet"></i> Add Income</button>
+              <button class="btn btn-primary" type="button" data-tab="budgets"><i data-lucide="target"></i> Plan Budgets</button>
+            </div>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-4">
+            <div class="rounded-2xl border p-4" style="border-color: var(--line);">
+              <p class="text-xs font-bold uppercase muted">Monthly income</p>
+              <p id="planIncome" class="mt-1 text-2xl font-black">$0.00</p>
+            </div>
+            <div class="rounded-2xl border p-4" style="border-color: var(--line);">
+              <p class="text-xs font-bold uppercase muted">Planned budgets</p>
+              <p id="planBudgets" class="mt-1 text-2xl font-black">$0.00</p>
+            </div>
+            <div class="rounded-2xl border p-4" style="border-color: var(--line);">
+              <p class="text-xs font-bold uppercase muted">Unplanned cash</p>
+              <p id="planUnplanned" class="mt-1 text-2xl font-black">$0.00</p>
+            </div>
+            <div class="rounded-2xl border p-4" style="border-color: var(--line);">
+              <p class="text-xs font-bold uppercase muted">Spent vs income</p>
+              <p id="planSpentPct" class="mt-1 text-2xl font-black">0%</p>
+            </div>
+          </div>
+          <div class="progress-shell mt-4"><div id="planSpendBar" class="progress-fill" style="background:linear-gradient(135deg,var(--brand),var(--brand-2));"></div></div>
+        </article>
+
+        <div class="mt-5 grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+          <article class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-black">Expense Breakdown</h3>
+                <p class="text-sm muted">Category mix for the current month</p>
+              </div>
+            </div>
+            <div class="mx-auto max-w-md"><canvas id="categoryChart" height="280"></canvas></div>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-black">Spending Trend</h3>
+                <p class="text-sm muted">Last 14 days</p>
+              </div>
+            </div>
+            <canvas id="trendChart" height="260"></canvas>
+          </article>
+        </div>
+
+        <div class="mt-5 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+          <form id="expenseForm" class="panel rounded-2xl p-5">
+            <h3 class="mb-4 text-lg font-black">Quick Add Transaction</h3>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="text-sm font-bold">Amount<input required name="amount" type="number" min="0.01" step="0.01" class="input mt-1" /></label>
+              <label class="text-sm font-bold">Category<select required name="category" class="input mt-1"></select></label>
+              <label class="text-sm font-bold">Date<input required name="date" type="date" class="input mt-1" /></label>
+              <label class="text-sm font-bold">Notes<input name="notes" class="input mt-1" maxlength="80" /></label>
+            </div>
+            <button class="btn btn-primary mt-4 w-full" type="submit"><i data-lucide="plus"></i> Add Expense</button>
+          </form>
+          <article class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-black">Recent Expenses</h3>
+              <button id="clearExpenses" class="btn btn-danger !min-h-9 !px-3 text-sm"><i data-lucide="trash-2"></i> Clear</button>
+            </div>
+            <div id="expenseList" class="space-y-3"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="budgets" class="view">
+        <div class="mb-5 grid gap-4 md:grid-cols-4">
+          <article class="panel rounded-2xl p-5">
+            <p class="text-sm muted">Income streams</p>
+            <h3 id="budgetIncomeTotal" class="mt-2 text-3xl font-black">$0.00</h3>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <p class="text-sm muted">Planned budgets</p>
+            <h3 id="budgetPlannedTotal" class="mt-2 text-3xl font-black">$0.00</h3>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <p class="text-sm muted">Monthly spent</p>
+            <h3 id="budgetSpentTotal" class="mt-2 text-3xl font-black">$0.00</h3>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <p class="text-sm muted">Left after spending</p>
+            <h3 id="budgetLeftTotal" class="mt-2 text-3xl font-black">$0.00</h3>
+          </article>
+        </div>
+        <div class="grid gap-5 lg:grid-cols-2">
+          <form id="incomeForm" class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-black">Income Streams</h3>
+                <p class="text-sm muted">Add salary, freelance, rental, benefits, or any recurring monthly income.</p>
+              </div>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-[1fr_170px_auto]">
+              <label class="text-sm font-bold">Income name<input name="name" class="input mt-1" placeholder="Salary, freelance, rental" required /></label>
+              <label class="text-sm font-bold">Monthly amount<input name="amount" class="input mt-1" type="number" min="0.01" step="0.01" placeholder="$0.00" required /></label>
+              <button class="btn btn-primary self-end" type="submit"><i data-lucide="plus"></i> Add</button>
+            </div>
+            <div id="incomeList" class="mt-4 space-y-3"></div>
+          </form>
+          <form id="budgetForm" class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 class="text-lg font-black">Budget Planner</h3>
+                <p class="text-sm muted">Assign monthly limits to spending categories and watch progress warnings.</p>
+              </div>
+              <button id="starterBudgets" class="btn btn-soft !min-h-9 text-sm" type="button"><i data-lucide="wand-sparkles"></i> Starter Plan</button>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-[1fr_170px_auto]">
+              <label class="text-sm font-bold">Category<select name="category" class="input mt-1" required></select></label>
+              <label class="text-sm font-bold">Monthly limit<input name="amount" class="input mt-1" type="number" min="0.01" step="0.01" placeholder="$0.00" required /></label>
+              <button class="btn btn-primary self-end" type="submit"><i data-lucide="plus"></i> Add</button>
+            </div>
+            <div id="budgetList" class="mt-4 space-y-4"></div>
+          </form>
+        </div>
+        <form id="goalForm" class="panel mt-5 rounded-2xl p-5">
+          <h3 class="mb-4 text-lg font-black">Savings Goals</h3>
+          <div class="grid gap-3 md:grid-cols-[1fr_140px_140px_160px_auto]">
+            <input name="name" class="input" placeholder="Emergency fund" required />
+            <input name="target" class="input" type="number" min="1" step="0.01" placeholder="Target" required />
+            <input name="current" class="input" type="number" min="0" step="0.01" placeholder="Saved" required />
+            <input name="date" class="input" type="date" required />
+            <button class="btn btn-primary" type="submit"><i data-lucide="piggy-bank"></i></button>
+          </div>
+          <div id="goalList" class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3"></div>
+        </form>
+      </section>
+
+      <section id="bills" class="view">
+        <div class="grid gap-5 lg:grid-cols-[.85fr_1.15fr]">
+          <form id="billForm" class="panel rounded-2xl p-5">
+            <h3 class="mb-4 text-lg font-black">Add Bill or Subscription</h3>
+            <div class="grid gap-3">
+              <input name="name" class="input" placeholder="Netflix, rent, insurance" required />
+              <div class="grid gap-3 sm:grid-cols-2">
+                <input name="amount" class="input" type="number" min="0.01" step="0.01" placeholder="Amount" required />
+                <select name="category" class="input" required></select>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <input name="dueDay" class="input" type="number" min="1" max="31" placeholder="Due day" required />
+                <label class="flex items-center gap-3 rounded-xl border p-3 text-sm font-bold" style="border-color: var(--line);"><input name="autoLog" type="checkbox" class="h-5 w-5 accent-blue-600" /> Auto-log on due date</label>
+              </div>
+              <button class="btn btn-primary" type="submit"><i data-lucide="calendar-plus"></i> Save Bill</button>
+            </div>
+          </form>
+          <article class="panel rounded-2xl p-5">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-black">Monthly Calendar</h3>
+                <p id="calendarLabel" class="text-sm muted"></p>
+              </div>
+            </div>
+            <div class="grid grid-cols-7 gap-2 text-center text-xs font-black muted">
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+            <div id="billCalendar" class="mt-2 grid grid-cols-7 gap-2"></div>
+          </article>
+        </div>
+        <article class="panel mt-5 rounded-2xl p-5">
+          <h3 class="mb-4 text-lg font-black">Upcoming Timeline</h3>
+          <div id="billList" class="space-y-3"></div>
+        </article>
+      </section>
+
+      <section id="smart" class="view">
+        <div class="grid gap-5 lg:grid-cols-[.85fr_1.15fr]">
+          <article class="panel rounded-2xl p-5">
+            <h3 class="mb-4 text-lg font-black">Hours Worked Converter</h3>
+            <form id="settingsForm" class="space-y-3">
+              <label class="text-sm font-bold">Hourly wage<input name="hourlyWage" type="number" min="0" step="0.01" class="input mt-1" /></label>
+              <button class="btn btn-primary w-full" type="submit"><i data-lucide="save"></i> Save Settings</button>
+            </form>
+            <div class="mt-4 rounded-2xl p-4" style="background: rgba(20,184,166,.1);">
+              <p class="text-sm muted">Example</p>
+              <p id="hoursExample" class="text-xl font-black">$100.00 = set wage first</p>
+            </div>
+          </article>
+          <article class="panel rounded-2xl p-5">
+            <h3 class="mb-4 text-lg font-black">Settings & Backup</h3>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <button id="exportBtn" class="btn btn-primary" type="button"><i data-lucide="download"></i> Export Backup</button>
+              <label class="btn btn-soft cursor-pointer"><i data-lucide="upload"></i> Import Backup<input id="importInput" type="file" accept="application/json" hidden /></label>
+            </div>
+            <div class="mt-5 grid gap-3">
+              <div class="flex items-center justify-between rounded-2xl border p-4" style="border-color: var(--line);">
+                <div>
+                  <p class="font-black">Protected browser storage</p>
+                  <p id="persistDetail" class="text-sm muted">Checking status...</p>
+                </div>
+                <span id="persistBadge" class="rounded-full px-3 py-1 text-xs font-black">Checking</span>
+              </div>
+              <button id="requestPersist" class="btn btn-soft" type="button"><i data-lucide="shield-check"></i> Request Protected Storage</button>
+            </div>
+            <div class="mt-5 rounded-2xl border p-4 text-sm muted" style="border-color: var(--line);">
+              PWA ready: host this file with a small <strong>manifest.json</strong> and <strong>sw.js</strong> beside it. The app will register the service worker automatically when available.
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <button id="fab" class="fab btn btn-primary" aria-label="Add expense"><i data-lucide="plus"></i></button>
+
+  <nav class="mobile-nav fixed bottom-0 left-0 right-0 z-50 border-t px-2 py-2" style="border-color: var(--line); background: color-mix(in srgb, var(--panel-solid) 92%, transparent); backdrop-filter: blur(18px);">
+    <div class="grid grid-cols-4 gap-1">
+      <button class="mobile-tab active grid place-items-center gap-1 rounded-xl p-2 text-xs font-bold" data-tab="dashboard"><i data-lucide="layout-dashboard"></i><span>Home</span></button>
+      <button class="mobile-tab grid place-items-center gap-1 rounded-xl p-2 text-xs font-bold muted" data-tab="budgets"><i data-lucide="target"></i><span>Budget</span></button>
+      <button class="mobile-tab grid place-items-center gap-1 rounded-xl p-2 text-xs font-bold muted" data-tab="bills"><i data-lucide="calendar-days"></i><span>Bills</span></button>
+      <button class="mobile-tab grid place-items-center gap-1 rounded-xl p-2 text-xs font-bold muted" data-tab="smart"><i data-lucide="settings"></i><span>Smart</span></button>
+    </div>
+  </nav>
+
+  <div id="expenseModal" class="modal-backdrop">
+    <div class="panel w-full max-w-lg rounded-3xl p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-black">Add Expense</h3>
+        <button id="closeModal" class="btn btn-soft !min-h-10 !p-2" aria-label="Close"><i data-lucide="x"></i></button>
+      </div>
+      <form id="modalExpenseForm" class="grid gap-3">
+        <input required name="amount" type="number" min="0.01" step="0.01" class="input" placeholder="Amount" />
+        <select required name="category" class="input"></select>
+        <input required name="date" type="date" class="input" />
+        <input name="notes" class="input" maxlength="80" placeholder="Notes" />
+        <button class="btn btn-primary" type="submit"><i data-lucide="plus"></i> Add Expense</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast glass rounded-2xl p-4">
+    <div class="flex gap-3">
+      <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-600 text-white"><i data-lucide="info"></i></div>
+      <div>
+        <p id="toastTitle" class="font-black">Notice</p>
+        <p id="toastMsg" class="text-sm muted"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const KEY = "unifiedFinanceDashboard.v1";
+    const categories = ["Housing","Groceries","Transport","Utilities","Health","Dining","Shopping","Entertainment","Debt","Savings","Subscriptions","Other"];
+    const todayISO = () => new Date().toISOString().slice(0,10);
+    const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    const money = n => (Number(n)||0).toLocaleString(undefined,{style:"currency",currency:"USD"});
+    const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
+    const monthKey = d => (d || todayISO()).slice(0,7);
+    const stateDefault = {
+      version: 1,
+      expenses: [],
+      incomes: [],
+      budgets: [],
+      bills: [],
+      goals: [],
+      settings: { hourlyWage: 0, theme: "light", persisted: false },
+      billLog: {}
+    };
+    let state = loadState();
+    let categoryChart, trendChart;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return structuredClone(stateDefault);
+        const parsed = JSON.parse(raw);
+        return { ...structuredClone(stateDefault), ...parsed, settings: { ...stateDefault.settings, ...(parsed.settings||{}) } };
+      } catch {
+        return structuredClone(stateDefault);
+      }
+    }
+    function saveState() {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    }
+    function showToast(title, msg) {
+      document.getElementById("toastTitle").textContent = title;
+      document.getElementById("toastMsg").textContent = msg;
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      lucide.createIcons();
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 5200);
+    }
+    async function updatePersistenceStatus(request = false) {
+      const badge = document.getElementById("persistBadge");
+      const detail = document.getElementById("persistDetail");
+      const side = document.getElementById("persistBadgeSide");
+      if (!navigator.storage || !navigator.storage.persisted) {
+        badge.textContent = "Unavailable";
+        badge.style.background = "rgba(245,158,11,.16)";
+        badge.style.color = "var(--warning)";
+        detail.textContent = "This browser does not expose persistent storage controls.";
+        side.textContent = "Protected storage unavailable";
+        return false;
+      }
+      let persisted = await navigator.storage.persisted();
+      if (request && !persisted && navigator.storage.persist) persisted = await navigator.storage.persist();
+      state.settings.persisted = !!persisted;
+      saveState();
+      badge.textContent = persisted ? "Protected" : "Standard";
+      badge.style.background = persisted ? "rgba(16,185,129,.15)" : "rgba(245,158,11,.16)";
+      badge.style.color = persisted ? "var(--good)" : "var(--warning)";
+      detail.textContent = persisted ? "Your browser agreed to protect this local app data from routine cleanup." : "Your data is saved locally, but the browser may clear it during storage cleanup.";
+      side.textContent = persisted ? "Protected storage active" : "Storage protection not granted";
+      return persisted;
+    }
+    async function requestProtectedStorageInitial() {
+      showToast("Protect your data", "This app asks the browser to keep your finance records from being removed during automatic storage cleanup.");
+      await updatePersistenceStatus(true);
+    }
+
+    function setTheme(theme) {
+      state.settings.theme = theme;
+      document.documentElement.dataset.theme = theme;
+      saveState();
+      syncThemeSwitches();
+      lucide.createIcons();
+    }
+    function syncThemeSwitches() {
+      const isDark = state.settings.theme === "dark";
+      document.querySelectorAll(".theme-switch-input").forEach(input => input.checked = isDark);
+      const label = isDark ? "Dark" : "Light";
+      const sideLabel = document.getElementById("themeSwitchLabel");
+      const topLabel = document.getElementById("themeSwitchTopLabel");
+      if (sideLabel) sideLabel.textContent = label;
+      if (topLabel) topLabel.textContent = label;
+      document.querySelector('meta[name="theme-color"]').setAttribute("content", isDark ? "#0b1020" : "#f6f8fb");
+    }
+    function fillCategorySelects() {
+      document.querySelectorAll("select[name='category']").forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+        if (current) sel.value = current;
+      });
+    }
+    function hours(amount) {
+      const wage = Number(state.settings.hourlyWage);
+      if (!wage) return "";
+      return `${(Number(amount)/wage).toFixed(1)} hours of work`;
+    }
+    function thisMonthExpenses() {
+      const mk = monthKey(todayISO());
+      return state.expenses.filter(e => monthKey(e.date) === mk);
+    }
+    function totalIncome() { return state.incomes.reduce((s,i)=>s+Number(i.amount),0); }
+    function totalBudgets() { return state.budgets.reduce((s,b)=>s+Number(b.amount),0); }
+    function monthlySpentTotal() { return thisMonthExpenses().reduce((s,e)=>s+Number(e.amount),0); }
+    function spentByCategory(category) {
+      return thisMonthExpenses().filter(e => e.category === category).reduce((s,e)=>s+Number(e.amount),0);
+    }
+    function nextDueDate(day) {
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth();
+      const dim = new Date(y, m + 1, 0).getDate();
+      let due = new Date(y, m, Math.min(Number(day), dim));
+      if (due < new Date(now.toDateString())) {
+        const nextDim = new Date(y, m + 2, 0).getDate();
+        due = new Date(y, m + 1, Math.min(Number(day), nextDim));
+      }
+      return due;
+    }
+    function autoLogBills() {
+      const now = new Date();
+      const key = todayISO();
+      state.bills.forEach(b => {
+        if (!b.autoLog) return;
+        const dueToday = Math.min(Number(b.dueDay), new Date(now.getFullYear(), now.getMonth()+1, 0).getDate()) === now.getDate();
+        const billKey = `${b.id}:${key}`;
+        if (dueToday && !state.billLog[billKey]) {
+          state.expenses.push({ id: uid(), amount: Number(b.amount), category: b.category, date: key, notes: `${b.name} auto-logged` });
+          state.billLog[billKey] = true;
+          showToast("Bill logged", `${b.name} was added to expenses for ${money(b.amount)}.`);
+        }
+      });
+      saveState();
+    }
+
+    function renderDashboard() {
+      const monthly = monthlySpentTotal();
+      document.getElementById("monthlySpent").textContent = money(monthly);
+      document.getElementById("monthlyHours").textContent = hours(monthly) || "Set wage to see hours";
+      document.getElementById("remainingBudget").textContent = money(totalIncome() - monthly);
+      document.getElementById("incomeSummary").textContent = `${money(totalIncome())} income · ${money(totalBudgets())} planned`;
+      const upcoming = [...state.bills].sort((a,b)=>nextDueDate(a.dueDay)-nextDueDate(b.dueDay))[0];
+      document.getElementById("nextBill").textContent = upcoming ? upcoming.name : "No bills yet";
+      document.getElementById("nextBillMeta").textContent = upcoming ? `${money(upcoming.amount)} due ${nextDueDate(upcoming.dueDay).toLocaleDateString()}` : "Add one in Bills";
+      renderPlanningSummary();
+      renderExpenses();
+      renderCharts();
+    }
+    function renderPlanningSummary() {
+      const income = totalIncome();
+      const planned = totalBudgets();
+      const spent = monthlySpentTotal();
+      const unplanned = income - planned;
+      const spentPct = income ? spent / income * 100 : 0;
+      const ids = {
+        planIncome: money(income),
+        planBudgets: money(planned),
+        planUnplanned: money(unplanned),
+        planSpentPct: `${spentPct.toFixed(0)}%`,
+        budgetIncomeTotal: money(income),
+        budgetPlannedTotal: money(planned),
+        budgetSpentTotal: money(spent),
+        budgetLeftTotal: money(income - spent)
+      };
+      Object.entries(ids).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      });
+      const bar = document.getElementById("planSpendBar");
+      if (bar) {
+        bar.style.width = `${clamp(spentPct, 0, 100)}%`;
+        bar.style.background = spentPct >= 100 ? "var(--danger)" : spentPct >= 80 ? "var(--warning)" : "linear-gradient(135deg,var(--brand),var(--brand-2))";
+        bar.classList.toggle("over-budget", spentPct >= 100);
+      }
+    }
+    function renderExpenses() {
+      const list = document.getElementById("expenseList");
+      if (!state.expenses.length) {
+        list.innerHTML = `<div class="rounded-2xl border p-6 text-center muted" style="border-color: var(--line);"><i data-lucide="receipt" class="mx-auto mb-2"></i>No expenses yet. Add your first transaction.</div>`;
+        return;
+      }
+      list.innerHTML = [...state.expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12).map(e => `
+        <div class="flex items-center justify-between gap-3 rounded-2xl border p-3" style="border-color: var(--line);">
+          <div class="min-w-0">
+            <p class="truncate font-black">${e.category} <span class="font-normal muted">${e.notes ? "· " + e.notes : ""}</span></p>
+            <p class="text-sm muted">${new Date(e.date+"T00:00:00").toLocaleDateString()} ${hours(e.amount) ? "· " + hours(e.amount) : ""}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <strong>${money(e.amount)}</strong>
+            <button class="btn btn-danger !min-h-9 !p-2" onclick="removeItem('expenses','${e.id}')" aria-label="Delete"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>`).join("");
+    }
+    function renderCharts() {
+      const ctx = document.getElementById("categoryChart");
+      const data = categories.map(c => spentByCategory(c));
+      const activeLabels = categories.filter((_,i)=>data[i] > 0);
+      const activeData = data.filter(v=>v > 0);
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(ctx, {
+        type: "doughnut",
+        data: { labels: activeLabels.length ? activeLabels : ["No expenses"], datasets: [{ data: activeData.length ? activeData : [1], backgroundColor: ["#2563eb","#14b8a6","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#84cc16","#f97316","#ec4899","#64748b","#22c55e","#a855f7"], borderWidth: 0 }] },
+        options: { cutout: "68%", plugins: { legend: { position: "bottom", labels: { color: getComputedStyle(document.body).color } } } }
+      });
+      const days = [...Array(14)].map((_,i)=>{ const d = new Date(); d.setDate(d.getDate() - (13-i)); return d.toISOString().slice(0,10); });
+      const trend = days.map(day => state.expenses.filter(e=>e.date===day).reduce((s,e)=>s+Number(e.amount),0));
+      if (trendChart) trendChart.destroy();
+      trendChart = new Chart(document.getElementById("trendChart"), {
+        type: "line",
+        data: { labels: days.map(d=>d.slice(5)), datasets: [{ data: trend, label: "Daily spend", borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.14)", fill: true, tension: .35, pointRadius: 3 }] },
+        options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: "#94a3b8" }, grid: { display:false } }, y: { ticks: { color: "#94a3b8" }, grid: { color: "rgba(148,163,184,.18)" } } } }
+      });
+    }
+    function renderBudgets() {
+      renderPlanningSummary();
+      document.getElementById("incomeList").innerHTML = state.incomes.length ? state.incomes.map(i => `
+        <div class="flex items-center justify-between rounded-2xl border p-3" style="border-color: var(--line);">
+          <div><p class="font-black">${i.name}</p><p class="text-sm muted">Monthly income</p></div><div class="flex items-center gap-2"><strong>${money(i.amount)}</strong><button class="btn btn-danger !min-h-9 !p-2" onclick="removeItem('incomes','${i.id}')"><i data-lucide="trash-2"></i></button></div>
+        </div>`).join("") : `<div class="rounded-2xl border p-5 text-center muted" style="border-color: var(--line);">Add one or more incomes to power remaining budget totals.</div>`;
+      document.getElementById("budgetList").innerHTML = state.budgets.length ? state.budgets.map(b => {
+        const spent = spentByCategory(b.category), pct = Number(b.amount) ? spent / Number(b.amount) * 100 : 0;
+        const color = pct >= 100 ? "var(--danger)" : pct >= 80 ? "var(--warning)" : "linear-gradient(135deg,var(--brand),var(--brand-2))";
+        return `<div class="rounded-2xl border p-4" style="border-color: var(--line);">
+          <div class="mb-2 flex items-center justify-between gap-3"><div><p class="font-black">${b.category}</p><p class="text-sm muted">${money(spent)} of ${money(b.amount)} ${hours(b.amount) ? "· " + hours(b.amount) : ""}</p></div><button class="btn btn-danger !min-h-9 !p-2" onclick="removeItem('budgets','${b.id}')"><i data-lucide="trash-2"></i></button></div>
+          <div class="progress-shell"><div class="progress-fill ${pct>=100 ? "over-budget" : ""}" style="width:${clamp(pct,0,100)}%; background:${color};"></div></div>
+          <p class="mt-2 text-xs font-bold ${pct>=100 ? "text-red-500" : pct>=80 ? "text-amber-500" : "muted"}">${pct.toFixed(0)}% used</p>
+        </div>`;
+      }).join("") : `<div class="rounded-2xl border p-5 text-center muted" style="border-color: var(--line);">Create category budgets to unlock progress warnings.</div>`;
+      document.getElementById("goalList").innerHTML = state.goals.length ? state.goals.map(g => {
+        const pct = Number(g.target) ? Number(g.current)/Number(g.target)*100 : 0;
+        return `<div class="rounded-2xl border p-4" style="border-color: var(--line);">
+          <div class="mb-3 flex items-start justify-between gap-3"><div><p class="font-black"><i data-lucide="piggy-bank" class="mr-1 inline"></i>${g.name}</p><p class="text-sm muted">Target ${new Date(g.date+"T00:00:00").toLocaleDateString()}</p></div><button class="btn btn-danger !min-h-9 !p-2" onclick="removeItem('goals','${g.id}')"><i data-lucide="trash-2"></i></button></div>
+          <p class="mb-2 text-2xl font-black">${money(g.current)} <span class="text-sm font-bold muted">/ ${money(g.target)}</span></p>
+          <div class="progress-shell !h-4"><div class="progress-fill" style="width:${clamp(pct,0,100)}%; background:linear-gradient(90deg,#14b8a6,#22c55e);"></div></div>
+          <p class="mt-2 text-sm font-bold">${pct.toFixed(0)}% funded</p>
+        </div>`;
+      }).join("") : `<div class="rounded-2xl border p-6 text-center muted md:col-span-2 xl:col-span-3" style="border-color: var(--line);">Your virtual piggy banks will appear here.</div>`;
+    }
+    function renderBills() {
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth();
+      document.getElementById("calendarLabel").textContent = now.toLocaleString(undefined,{month:"long", year:"numeric"});
+      const firstDay = new Date(y,m,1).getDay();
+      const dim = new Date(y,m+1,0).getDate();
+      let cells = "";
+      for (let i=0;i<firstDay;i++) cells += `<div></div>`;
+      for (let d=1; d<=dim; d++) {
+        const due = state.bills.filter(b => Math.min(Number(b.dueDay), dim) === d);
+        cells += `<div class="calendar-cell ${d===now.getDate() ? "ring-2 ring-blue-500" : ""}"><p class="text-xs font-black">${d}</p>${due.slice(0,2).map(b=>`<p class="mt-1 truncate rounded-md bg-blue-600 px-1.5 py-1 text-[10px] font-bold text-white">${b.name}</p>`).join("")}${due.length>2?`<p class="text-[10px] muted">+${due.length-2}</p>`:""}</div>`;
+      }
+      document.getElementById("billCalendar").innerHTML = cells;
+      document.getElementById("billList").innerHTML = state.bills.length ? [...state.bills].sort((a,b)=>nextDueDate(a.dueDay)-nextDueDate(b.dueDay)).map(b => `
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4" style="border-color: var(--line);">
+          <div><p class="font-black">${b.name}</p><p class="text-sm muted">${money(b.amount)} · due ${nextDueDate(b.dueDay).toLocaleDateString()} · ${b.category}</p></div>
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 text-sm font-bold"><input type="checkbox" class="h-5 w-5 accent-blue-600" ${b.autoLog?"checked":""} onchange="toggleBillAuto('${b.id}', this.checked)" /> Auto-log</label>
+            <button class="btn btn-danger !min-h-9 !p-2" onclick="removeItem('bills','${b.id}')"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>`).join("") : `<div class="rounded-2xl border p-6 text-center muted" style="border-color: var(--line);">Add rent, subscriptions, insurance, and recurring bills.</div>`;
+    }
+    function renderSmart() {
+      document.querySelector("#settingsForm [name='hourlyWage']").value = state.settings.hourlyWage || "";
+      document.getElementById("hoursExample").textContent = state.settings.hourlyWage ? `$100.00 = ${hours(100)}` : "$100.00 = set wage first";
+      updatePersistenceStatus(false);
+    }
+    function installDynamicManifest() {
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0f172a"/><path d="M132 166h248a36 36 0 0 1 36 36v156a36 36 0 0 1-36 36H132a36 36 0 0 1-36-36V202a36 36 0 0 1 36-36Z" fill="#2563eb"/><path d="M96 218h320v76H96z" fill="#14b8a6"/><circle cx="345" cy="306" r="34" fill="#f8fafc"/></svg>`;
+      const manifest = {
+        name: "Unified Personal Finance Dashboard",
+        short_name: "Finance",
+        start_url: "./",
+        scope: "./",
+        display: "standalone",
+        background_color: "#0f172a",
+        theme_color: "#0f172a",
+        icons: [
+          { src: `data:image/svg+xml,${encodeURIComponent(iconSvg)}`, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+        ]
+      };
+      const link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" }));
+      document.head.appendChild(link);
+    }
+    async function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      const swCode = `
+        const CACHE = "finance-dashboard-single-file-v1";
+        self.addEventListener("install", event => {
+          event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(["./"])).then(() => self.skipWaiting()));
+        });
+        self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
+        self.addEventListener("fetch", event => {
+          event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+            const copy = response.clone();
+            if (event.request.method === "GET") caches.open(CACHE).then(cache => cache.put(event.request, copy)).catch(() => {});
+            return response;
+          }).catch(() => cached)));
+        });
+      `;
+      try {
+        await navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode], { type: "text/javascript" })));
+      } catch {
+        navigator.serviceWorker.register("./sw.js").catch(() => console.info("PWA service worker not available. Add sw.js beside index.html if this browser rejects inline registration."));
+      }
+    }
+    function renderAll() {
+      fillCategorySelects();
+      renderDashboard();
+      renderBudgets();
+      renderBills();
+      renderSmart();
+      lucide.createIcons();
+    }
+    function removeItem(collection, id) {
+      state[collection] = state[collection].filter(item => item.id !== id);
+      saveState();
+      renderAll();
+    }
+    function toggleBillAuto(id, checked) {
+      const bill = state.bills.find(b => b.id === id);
+      if (bill) bill.autoLog = checked;
+      saveState();
+      renderAll();
+    }
+    window.removeItem = removeItem;
+    window.toggleBillAuto = toggleBillAuto;
+
+    function addStarterBudgets() {
+      const income = totalIncome();
+      const base = income || 3000;
+      const starter = [
+        ["Housing", .32],
+        ["Groceries", .12],
+        ["Transport", .10],
+        ["Utilities", .08],
+        ["Health", .06],
+        ["Dining", .06],
+        ["Savings", .15],
+        ["Entertainment", .04],
+        ["Other", .07]
+      ];
+      starter.forEach(([category, pct]) => {
+        const amount = Math.round(base * pct);
+        const existing = state.budgets.find(b => b.category === category);
+        if (existing) existing.amount = amount;
+        else state.budgets.push({ id: uid(), category, amount });
+      });
+      saveState();
+      renderAll();
+      showToast("Starter budget added", `A monthly plan was created from ${income ? "your income" : "a sample $3,000 income"}. You can adjust every category.`);
+    }
+
+    function addExpenseFromForm(form) {
+      const data = Object.fromEntries(new FormData(form));
+      state.expenses.push({ id: uid(), amount: Number(data.amount), category: data.category, date: data.date, notes: data.notes || "" });
+      saveState(); form.reset(); form.date.value = todayISO(); renderAll(); showToast("Expense added", `${money(data.amount)} logged under ${data.category}.`);
+    }
+    function setActiveTab(tab) {
+      document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === tab));
+      document.querySelectorAll(".tab-btn,.mobile-tab").forEach(b => {
+        const active = b.dataset.tab === tab;
+        b.classList.toggle("active", active);
+        if (b.classList.contains("mobile-tab")) b.classList.toggle("muted", !active);
+      });
+      document.getElementById("pageTitle").textContent = {dashboard:"Dashboard", budgets:"Budgets & Goals", bills:"Bills & Subscriptions", smart:"Smart Utilities"}[tab];
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    function validateBackup(data) {
+      return data && Array.isArray(data.expenses) && Array.isArray(data.incomes) && Array.isArray(data.budgets) && Array.isArray(data.bills) && Array.isArray(data.goals) && typeof data.settings === "object";
+    }
+    function exportBackup() {
+      const payload = { ...state, exportedAt: new Date().toISOString(), app: "Unified Personal Finance Dashboard" };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `finance-dashboard-backup-${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast("Backup exported", "Your JSON backup download has started.");
+    }
+    async function importBackup(file) {
+      try {
+        const data = JSON.parse(await file.text());
+        if (!validateBackup(data)) throw new Error("Invalid schema");
+        state = { ...structuredClone(stateDefault), ...data, settings: { ...stateDefault.settings, ...data.settings } };
+        saveState();
+        showToast("Backup imported", "Your data was restored successfully.");
+        setTimeout(() => location.reload(), 900);
+      } catch {
+        showToast("Import failed", "That file does not look like a valid finance dashboard backup.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      installDynamicManifest();
+      document.documentElement.dataset.theme = state.settings.theme;
+      syncThemeSwitches();
+      fillCategorySelects();
+      document.querySelectorAll("input[type='date']").forEach(i => i.value = todayISO());
+      autoLogBills();
+      renderAll();
+      requestProtectedStorageInitial();
+      document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => setActiveTab(btn.dataset.tab)));
+      document.getElementById("expenseForm").addEventListener("submit", e => { e.preventDefault(); addExpenseFromForm(e.currentTarget); });
+      document.getElementById("modalExpenseForm").addEventListener("submit", e => { e.preventDefault(); addExpenseFromForm(e.currentTarget); document.getElementById("expenseModal").classList.remove("show"); });
+      document.getElementById("incomeForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.incomes.push({ id: uid(), name: d.name, amount: Number(d.amount) }); saveState(); e.currentTarget.reset(); renderAll(); });
+      document.getElementById("budgetForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); const existing = state.budgets.find(b => b.category === d.category); if (existing) existing.amount = Number(d.amount); else state.budgets.push({ id: uid(), category: d.category, amount: Number(d.amount) }); saveState(); e.currentTarget.reset(); renderAll(); });
+      document.getElementById("starterBudgets").addEventListener("click", addStarterBudgets);
+      document.getElementById("goalForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.goals.push({ id: uid(), name: d.name, target: Number(d.target), current: Number(d.current), date: d.date }); saveState(); e.currentTarget.reset(); e.currentTarget.date.value = todayISO(); renderAll(); });
+      document.getElementById("billForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.bills.push({ id: uid(), name: d.name, amount: Number(d.amount), category: d.category, dueDay: Number(d.dueDay), autoLog: !!d.autoLog }); saveState(); e.currentTarget.reset(); renderAll(); });
+      document.getElementById("settingsForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.settings.hourlyWage = Number(d.hourlyWage); saveState(); renderAll(); showToast("Settings saved", "Hours-worked conversions are now updated."); });
+      document.getElementById("exportBtn").addEventListener("click", exportBackup);
+      document.getElementById("importInput").addEventListener("change", e => e.target.files[0] && importBackup(e.target.files[0]));
+      document.getElementById("requestPersist").addEventListener("click", () => updatePersistenceStatus(true).then(ok => showToast(ok ? "Storage protected" : "Storage not protected", ok ? "Your browser granted persistent local storage." : "The browser did not grant persistent storage this time.")));
+      document.getElementById("clearExpenses").addEventListener("click", () => { if (confirm("Clear all expenses?")) { state.expenses = []; saveState(); renderAll(); } });
+      document.querySelectorAll(".theme-switch-input").forEach(input => input.addEventListener("change", e => setTheme(e.currentTarget.checked ? "dark" : "light")));
+      ["fab","quickAddTop"].forEach(id => document.getElementById(id).addEventListener("click", () => document.getElementById("expenseModal").classList.add("show")));
+      document.getElementById("closeModal").addEventListener("click", () => document.getElementById("expenseModal").classList.remove("show"));
+      document.getElementById("expenseModal").addEventListener("click", e => { if (e.target.id === "expenseModal") e.currentTarget.classList.remove("show"); });
+      registerServiceWorker();
+    });
+  </script>
+</body>
+</html>
