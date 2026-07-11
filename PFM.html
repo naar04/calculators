@@ -6,9 +6,15 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="description" content="Unified Personal Finance Dashboard" />
   <title>Unified Personal Finance Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="dns-prefetch" href="https://unpkg.com" />
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
   <style>
     :root {
       --bg: #f6f8fb;
@@ -78,6 +84,7 @@
       transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
     }
     .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
     .btn-primary {
       color: white;
       background: linear-gradient(135deg, var(--brand), var(--brand-2));
@@ -211,6 +218,22 @@
       min-width: 44px;
       font-size: .85rem;
       font-weight: 800;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      padding: .35rem .7rem;
+      font-size: .78rem;
+      font-weight: 700;
+      background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+    }
+    .chip button {
+      display: inline-flex;
+      color: var(--danger);
+      opacity: .8;
     }
     @media (min-width: 1024px) {
       .fab { display: none; }
@@ -486,12 +509,25 @@
               <p class="text-sm muted">Example</p>
               <p id="hoursExample" class="text-xl font-black">$100.00 = set wage first</p>
             </div>
+            <div class="mt-5 rounded-2xl border p-4" style="border-color: var(--line);">
+              <h4 class="mb-3 text-sm font-black">Manage Expense Categories</h4>
+              <form id="categoryForm" class="flex gap-2">
+                <input name="name" class="input" placeholder="e.g. Travel, Pets, Charity" maxlength="24" required />
+                <button class="btn btn-primary !px-4" type="submit"><i data-lucide="plus"></i></button>
+              </form>
+              <div id="categoryList" class="mt-3 flex flex-wrap gap-2"></div>
+              <p class="mt-3 text-xs muted">Default categories can't be removed. Custom categories you add appear across every dropdown in the app.</p>
+            </div>
           </article>
           <article class="panel rounded-2xl p-5">
             <h3 class="mb-4 text-lg font-black">Settings & Backup</h3>
             <div class="grid gap-3 sm:grid-cols-2">
-              <button id="exportBtn" class="btn btn-primary" type="button"><i data-lucide="download"></i> Export Backup</button>
-              <label class="btn btn-soft cursor-pointer"><i data-lucide="upload"></i> Import Backup<input id="importInput" type="file" accept="application/json" hidden /></label>
+              <button id="installPwaBtn" class="btn btn-primary" type="button" disabled><i data-lucide="download-cloud"></i> Install App</button>
+              <button id="exportBtn" class="btn btn-soft" type="button"><i data-lucide="download"></i> Export Backup</button>
+            </div>
+            <p id="installPwaHint" class="mt-2 text-xs muted">Checking install availability...</p>
+            <div class="mt-3">
+              <label class="btn btn-soft w-full cursor-pointer"><i data-lucide="upload"></i> Import Backup<input id="importInput" type="file" accept="application/json" hidden /></label>
             </div>
             <div class="mt-5 grid gap-3">
               <div class="flex items-center justify-between rounded-2xl border p-4" style="border-color: var(--line);">
@@ -504,7 +540,7 @@
               <button id="requestPersist" class="btn btn-soft" type="button"><i data-lucide="shield-check"></i> Request Protected Storage</button>
             </div>
             <div class="mt-5 rounded-2xl border p-4 text-sm muted" style="border-color: var(--line);">
-              PWA ready: host this file with a small <strong>manifest.json</strong> and <strong>sw.js</strong> beside it. The app will register the service worker automatically when available.
+              PWA ready: host this file with a small <strong>manifest.json</strong> and <strong>sw.js</strong> beside it, or rely on the auto-generated manifest and service worker built into this page. The app will register the service worker automatically when available.
             </div>
           </article>
         </div>
@@ -551,12 +587,13 @@
 
   <script>
     const KEY = "unifiedFinanceDashboard.v1";
-    const categories = ["Housing","Groceries","Transport","Utilities","Health","Dining","Shopping","Entertainment","Debt","Savings","Subscriptions","Other"];
+    const categories = ["Housing","Groceries","Transport","Utilities","Health","Dining","Shopping","Entertainment","Debt","Savings","Subscriptions","Education","Other"];
     const todayISO = () => new Date().toISOString().slice(0,10);
     const uid = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
     const money = n => (Number(n)||0).toLocaleString(undefined,{style:"currency",currency:"USD"});
     const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
     const monthKey = d => (d || todayISO()).slice(0,7);
+    const idle = (fn) => ("requestIdleCallback" in window) ? requestIdleCallback(fn, { timeout: 400 }) : setTimeout(fn, 0);
     const stateDefault = {
       version: 1,
       expenses: [],
@@ -564,11 +601,13 @@
       budgets: [],
       bills: [],
       goals: [],
+      customCategories: [],
       settings: { hourlyWage: 0, theme: "light", persisted: false },
       billLog: {}
     };
     let state = loadState();
     let categoryChart, trendChart;
+    let deferredInstallPrompt = null;
 
     function loadState() {
       try {
@@ -637,13 +676,46 @@
       if (topLabel) topLabel.textContent = label;
       document.querySelector('meta[name="theme-color"]').setAttribute("content", isDark ? "#0b1020" : "#f6f8fb");
     }
+    function allCategories() {
+      const base = categories.filter(c => c !== "Other");
+      const custom = state.customCategories.filter(c => !base.includes(c));
+      return [...base, ...custom, "Other"];
+    }
     function fillCategorySelects() {
+      const list = allCategories();
       document.querySelectorAll("select[name='category']").forEach(sel => {
         const current = sel.value;
-        sel.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
-        if (current) sel.value = current;
+        sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join("");
+        if (current && list.includes(current)) sel.value = current;
       });
     }
+    function renderCategoryManager() {
+      const wrap = document.getElementById("categoryList");
+      if (!wrap) return;
+      const defaults = categories.filter(c => c !== "Other").map(c => `<span class="chip">${c}</span>`).join("");
+      const custom = state.customCategories.map(c => `<span class="chip">${c}<button type="button" onclick="removeCategory('${c.replace(/'/g,"\\'")}')" aria-label="Remove ${c}"><i data-lucide="x" class="h-3 w-3"></i></button></span>`).join("");
+      wrap.innerHTML = defaults + custom;
+    }
+    function addCategory(name) {
+      const clean = (name || "").trim();
+      if (!clean) return;
+      const exists = allCategories().some(c => c.toLowerCase() === clean.toLowerCase());
+      if (exists) { showToast("Category exists", `"${clean}" is already in your category list.`); return; }
+      state.customCategories.push(clean);
+      saveState();
+      fillCategorySelects();
+      renderCategoryManager();
+      lucide.createIcons();
+      showToast("Category added", `"${clean}" is now available across all dropdowns.`);
+    }
+    function removeCategory(name) {
+      state.customCategories = state.customCategories.filter(c => c !== name);
+      saveState();
+      fillCategorySelects();
+      renderCategoryManager();
+      lucide.createIcons();
+    }
+    window.removeCategory = removeCategory;
     function hours(amount) {
       const wage = Number(state.settings.hourlyWage);
       if (!wage) return "";
@@ -697,7 +769,7 @@
       document.getElementById("nextBillMeta").textContent = upcoming ? `${money(upcoming.amount)} due ${nextDueDate(upcoming.dueDay).toLocaleDateString()}` : "Add one in Bills";
       renderPlanningSummary();
       renderExpenses();
-      renderCharts();
+      idle(renderCharts);
     }
     function renderPlanningSummary() {
       const income = totalIncome();
@@ -745,14 +817,16 @@
         </div>`).join("");
     }
     function renderCharts() {
+      if (typeof Chart === "undefined") { idle(renderCharts); return; }
       const ctx = document.getElementById("categoryChart");
-      const data = categories.map(c => spentByCategory(c));
-      const activeLabels = categories.filter((_,i)=>data[i] > 0);
+      const data = allCategories().map(c => spentByCategory(c));
+      const cats = allCategories();
+      const activeLabels = cats.filter((_,i)=>data[i] > 0);
       const activeData = data.filter(v=>v > 0);
       if (categoryChart) categoryChart.destroy();
       categoryChart = new Chart(ctx, {
         type: "doughnut",
-        data: { labels: activeLabels.length ? activeLabels : ["No expenses"], datasets: [{ data: activeData.length ? activeData : [1], backgroundColor: ["#2563eb","#14b8a6","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#84cc16","#f97316","#ec4899","#64748b","#22c55e","#a855f7"], borderWidth: 0 }] },
+        data: { labels: activeLabels.length ? activeLabels : ["No expenses"], datasets: [{ data: activeData.length ? activeData : [1], backgroundColor: ["#2563eb","#14b8a6","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#84cc16","#f97316","#ec4899","#64748b","#22c55e","#a855f7","#0ea5e9","#eab308"], borderWidth: 0 }] },
         options: { cutout: "68%", plugins: { legend: { position: "bottom", labels: { color: getComputedStyle(document.body).color } } } }
       });
       const days = [...Array(14)].map((_,i)=>{ const d = new Date(); d.setDate(d.getDate() - (13-i)); return d.toISOString().slice(0,10); });
@@ -814,6 +888,7 @@
     function renderSmart() {
       document.querySelector("#settingsForm [name='hourlyWage']").value = state.settings.hourlyWage || "";
       document.getElementById("hoursExample").textContent = state.settings.hourlyWage ? `$100.00 = ${hours(100)}` : "$100.00 = set wage first";
+      renderCategoryManager();
       updatePersistenceStatus(false);
     }
     function installDynamicManifest() {
@@ -856,6 +931,53 @@
       } catch {
         navigator.serviceWorker.register("./sw.js").catch(() => console.info("PWA service worker not available. Add sw.js beside index.html if this browser rejects inline registration."));
       }
+    }
+    function setInstallButtonState(mode) {
+      const btn = document.getElementById("installPwaBtn");
+      const hint = document.getElementById("installPwaHint");
+      if (!btn) return;
+      if (mode === "available") {
+        btn.disabled = false;
+        hint.textContent = "Your browser supports installing this dashboard as an app.";
+      } else if (mode === "installed") {
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="check-circle"></i> App Installed`;
+        hint.textContent = "This dashboard is installed. Launch it from your home screen or app list.";
+        lucide.createIcons();
+      } else {
+        btn.disabled = true;
+        hint.textContent = "Install isn't available in this browser yet, or the app is already installed. Try Chrome/Edge on desktop or Android, or 'Add to Home Screen' on iOS Safari.";
+      }
+    }
+    function setupInstallPrompt() {
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      if (isStandalone) { setInstallButtonState("installed"); return; }
+      setInstallButtonState("unavailable");
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        setInstallButtonState("available");
+      });
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        setInstallButtonState("installed");
+        showToast("App installed", "You can now launch this dashboard from your home screen or app list.");
+      });
+      document.getElementById("installPwaBtn").addEventListener("click", async () => {
+        if (!deferredInstallPrompt) {
+          showToast("Install not available", "Your browser hasn't offered install yet, or this app is already installed. Try reloading, or use your browser's 'Add to Home Screen' option.");
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        if (choice.outcome === "accepted") {
+          setInstallButtonState("installed");
+        } else {
+          setInstallButtonState("unavailable");
+          showToast("Install dismissed", "You can install the app anytime this option becomes available again.");
+        }
+      });
     }
     function renderAll() {
       fillCategorySelects();
@@ -945,7 +1067,7 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
+    function boot() {
       installDynamicManifest();
       document.documentElement.dataset.theme = state.settings.theme;
       syncThemeSwitches();
@@ -953,7 +1075,8 @@
       document.querySelectorAll("input[type='date']").forEach(i => i.value = todayISO());
       autoLogBills();
       renderAll();
-      requestProtectedStorageInitial();
+      setupInstallPrompt();
+      idle(requestProtectedStorageInitial);
       document.querySelectorAll("[data-tab]").forEach(btn => btn.addEventListener("click", () => setActiveTab(btn.dataset.tab)));
       document.getElementById("expenseForm").addEventListener("submit", e => { e.preventDefault(); addExpenseFromForm(e.currentTarget); });
       document.getElementById("modalExpenseForm").addEventListener("submit", e => { e.preventDefault(); addExpenseFromForm(e.currentTarget); document.getElementById("expenseModal").classList.remove("show"); });
@@ -963,6 +1086,7 @@
       document.getElementById("goalForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.goals.push({ id: uid(), name: d.name, target: Number(d.target), current: Number(d.current), date: d.date }); saveState(); e.currentTarget.reset(); e.currentTarget.date.value = todayISO(); renderAll(); });
       document.getElementById("billForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.bills.push({ id: uid(), name: d.name, amount: Number(d.amount), category: d.category, dueDay: Number(d.dueDay), autoLog: !!d.autoLog }); saveState(); e.currentTarget.reset(); renderAll(); });
       document.getElementById("settingsForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); state.settings.hourlyWage = Number(d.hourlyWage); saveState(); renderAll(); showToast("Settings saved", "Hours-worked conversions are now updated."); });
+      document.getElementById("categoryForm").addEventListener("submit", e => { e.preventDefault(); const d = Object.fromEntries(new FormData(e.currentTarget)); addCategory(d.name); e.currentTarget.reset(); });
       document.getElementById("exportBtn").addEventListener("click", exportBackup);
       document.getElementById("importInput").addEventListener("change", e => e.target.files[0] && importBackup(e.target.files[0]));
       document.getElementById("requestPersist").addEventListener("click", () => updatePersistenceStatus(true).then(ok => showToast(ok ? "Storage protected" : "Storage not protected", ok ? "Your browser granted persistent local storage." : "The browser did not grant persistent storage this time.")));
@@ -971,8 +1095,14 @@
       ["fab","quickAddTop"].forEach(id => document.getElementById(id).addEventListener("click", () => document.getElementById("expenseModal").classList.add("show")));
       document.getElementById("closeModal").addEventListener("click", () => document.getElementById("expenseModal").classList.remove("show"));
       document.getElementById("expenseModal").addEventListener("click", e => { if (e.target.id === "expenseModal") e.currentTarget.classList.remove("show"); });
-      registerServiceWorker();
-    });
+      idle(registerServiceWorker);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", boot);
+    } else {
+      boot();
+    }
   </script>
 </body>
 </html>
